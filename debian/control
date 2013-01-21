@@ -1,0 +1,8 @@
+Package: hsn2-js-sta
+Version: {VER}
+Section: unknown
+Priority: optional
+Architecture: i386
+Maintainer: Pawel Jacewicz <pawel.jacewicz@cert.pl>
+Description: HSN2 JavaScript Static Analyzer Service
+Distribution: {DEBIAN_DIST}

@@ -1,0 +1,30 @@
+
+CFLAGS = -Ic:/"Program Files"/Java/jdk1.6.0_03/include -Ic:/"Program Files"/Java/jdk1.6.0_03/include/win32/
+HDRS = mystring.h INgrams.h ngrams.h CharNgrams.h WordNgrams.h text2wfreq.h pl_nask_hsn_ngrams_NGramsCalc.h
+SRCS = string.cpp INgrams.cpp ngrams.cpp CharNgrams.cpp WordNgrams.cpp text2wfreq.cpp pl_nask_hsn_ngrams_NGramsCalc.cpp
+OBJS = string.o INgrams.o ngrams.o CharNgrams.o WordNgrams.o text2wfreq.o pl_nask_hsn_ngrams_NGramsCalc.o
+# OBJS = $(SRCS:.c.cpp=.o)
+TARGET = ngrams.dll
+
+default : $(TARGET)
+
+ngrams.dll : $(OBJS)
+	g++ -Wall -D_JNI_IMPLEMENTATION_ -Wl,--kill-at -shared $(CFLAGS) -o $(TARGET) $(OBJS)
+
+string.o: mystring.h
+INgrams.o: INgrams.h
+ngrams.o: ngrams.h
+CharNgrams.o: CharNgrams.h
+WordNgrams.o: WordNgrams.h
+text2wfreq.o: text2wfreq.h
+
+pl_nask_hsn_ngrams_NGramsCalc.o: pl_nask_hsn_ngrams_NGramsCalc.cpp pl_nask_hsn_ngrams_NGramsCalc.h
+	g++ -c -o pl_nask_hsn_ngrams_NGramsCalc.o $(CFLAGS) pl_nask_hsn_ngrams_NGramsCalc.cpp
+
+rebuild:
+	make clean
+	make
+
+clean : 
+	@echo "Removing all object files..."
+	del core *.o $(TARGET)

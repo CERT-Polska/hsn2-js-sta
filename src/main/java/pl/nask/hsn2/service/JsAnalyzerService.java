@@ -30,7 +30,7 @@ public final class JsAnalyzerService {
 		JsCommandLineParams cmd = parseArguments(args);
 
 
-        GenericService service = new GenericService(new JsAnalyzerTaskFactory(cmd), cmd.getMaxThreads(), cmd.getRbtCommonExchangeName());
+        GenericService service = new GenericService(new JsAnalyzerTaskFactory(cmd), cmd.getMaxThreads(), cmd.getRbtCommonExchangeName(), cmd.getRbtNotifyExchangeName());
         cmd.applyArguments(service);
 
         NGramsCalc.initialize(cmd.getLibPath());

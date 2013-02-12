@@ -40,7 +40,7 @@ hsn2-js-sta-amd64: hsn2-js-sta-clean
 		mkdir -p $(PKGamd64)/var/log/hsn2
 		tar -zxf ../target/hsn2-js-analyzer-*.tar.gz -C $(PKGamd64)/opt/hsn2/$(HSN2_COMPONENT)
 #pre-build amd64 lib
-		cp ../lib/amd64/libngrams.so $(PKGamd64)/opt/hsn2/$(HSN2_COMPONENT)/lib/
+		cp libngrams.so $(PKGamd64)/opt/hsn2/$(HSN2_COMPONENT)/lib/
 #copy WEKA ARFF file
 		cp ../out4.arff $(PKGamd64)/opt/hsn2/$(HSN2_COMPONENT)/lib/weka.arff
 		cp ../whitelist.md5 $(PKGamd64)/opt/hsn2/$(HSN2_COMPONENT)/lib/whitelist.md5

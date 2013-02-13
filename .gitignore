@@ -1,6 +1,4 @@
-*~
-*.swp
-*.html
-!_Layout.html
-*.css
-!css/
+/.classpath
+/.project
+/.settings/*
+/target/

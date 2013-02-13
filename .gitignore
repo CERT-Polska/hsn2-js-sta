@@ -2,3 +2,5 @@
 /.project
 /.settings/*
 /target/
+/lib/*.o
+/lib/*.so

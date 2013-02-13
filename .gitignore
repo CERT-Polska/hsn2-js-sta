@@ -1,6 +1,11 @@
-*~
 *.swp
 *.html
 !_Layout.html
 *.css
 !css/
+/.classpath
+/.project
+/.settings/*
+/target/
+/lib/*.o
+/lib/*.so

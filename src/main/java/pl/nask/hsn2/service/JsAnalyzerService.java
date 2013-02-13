@@ -19,22 +19,28 @@
 
 package pl.nask.hsn2.service;
 
+import java.lang.Thread.UncaughtExceptionHandler;
+
+import org.apache.commons.daemon.Daemon;
+import org.apache.commons.daemon.DaemonContext;
+import org.apache.commons.daemon.DaemonController;
+import org.apache.commons.daemon.DaemonInitException;
+
 import pl.nask.hsn2.GenericService;
 import pl.nask.hsn2.service.analysis.NGramsCalc;
 
-public final class JsAnalyzerService {
+public final class JsAnalyzerService implements Daemon {
 
-	private JsAnalyzerService(){}
+	private Thread serviceRunner;
+	private JsCommandLineParams cmd;
 
-	public static void main(String[] args) throws InterruptedException {
-		JsCommandLineParams cmd = parseArguments(args);
-
-
-        GenericService service = new GenericService(new JsAnalyzerTaskFactory(cmd), cmd.getMaxThreads(), cmd.getRbtCommonExchangeName(), cmd.getRbtNotifyExchangeName());
-        cmd.applyArguments(service);
-
-        NGramsCalc.initialize(cmd.getLibPath());
-        service.run();
+	public static void main(String[] args) throws DaemonInitException, Exception {
+		JsAnalyzerService jss = new JsAnalyzerService();
+		jss.init(new JsvcArgsWrapper(args));
+		jss.start();
+		jss.serviceRunner.join();
+		jss.stop();
+		jss.destroy();
 	}
 
 	private static JsCommandLineParams parseArguments(String[] args) {
@@ -42,5 +48,73 @@ public final class JsAnalyzerService {
 		params.parseParams(args);
 
 		return params;
+	}
+
+	@Override
+	public void init(DaemonContext context) throws DaemonInitException, Exception {
+		cmd = parseArguments(context.getArguments());
+
+		NGramsCalc.initialize(cmd.getLibPath());
+		
+	}
+
+	@Override
+	public void start() throws Exception {
+		final GenericService service = new GenericService(new JsAnalyzerTaskFactory(cmd), cmd.getMaxThreads(), cmd.getRbtCommonExchangeName(), cmd.getRbtNotifyExchangeName());
+        cmd.applyArguments(service);
+        serviceRunner = new Thread (new Runnable() {
+			
+			@Override
+			public void run() {
+				 try {
+					 Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+						
+						@Override
+						public void uncaughtException(Thread t, Throwable e) {
+							System.exit(1);
+							
+						}
+					});
+					service.run();
+				} catch (InterruptedException e) {
+					System.exit(0);
+				}
+				
+			}
+		},"Js-Sta-service");
+        serviceRunner.start();
+        
+		
+	}
+
+	@Override
+	public void stop() throws Exception {
+		serviceRunner.interrupt();
+		serviceRunner.join();
+		
+	}
+
+	@Override
+	public void destroy() {
+		
+	}
+	
+	
+	private static class JsvcArgsWrapper implements DaemonContext{
+		private String[] args;
+
+		private JsvcArgsWrapper(String [] a) {
+			this.args = a;
+		}
+
+		@Override
+		public DaemonController getController() {
+			return null;
+		}
+
+		@Override
+		public String[] getArguments() {
+			return args;
+		}
 	}
 }

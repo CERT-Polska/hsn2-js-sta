@@ -24,7 +24,7 @@ HSN2_COMPONENT_PARAMS="--connector 127.0.0.1 \
 --libPath ${HSN2_COMPONENT_HOME}/lib/libngrams.so \
 --whitelistPath ${HSN2_COMPONENT_HOME}/lib/whitelist.md5"
 
-HSN2_JVM_PARAMS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=1105"
+HSN2_JVM_PARAMS="-Xmx1200m -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=1105"
 
 MAINCLASS="pl.nask.hsn2.service.JsAnalyzerService"
 

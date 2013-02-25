@@ -19,19 +19,21 @@
 
 package pl.nask.hsn2.service.analysis;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import pl.nask.hsn2.protobuff.Resources.JSContext;
 import pl.nask.hsn2.protobuff.Resources.JSContextResults;
 import pl.nask.hsn2.protobuff.Resources.JSContextResults.JSClass;
 import weka.classifiers.Classifier;
@@ -41,162 +43,239 @@ import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
-
 public class JSWekaAnalyzer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JSWekaAnalyzer.class);
-    private static FilteredClassifier fc = null;
-    private static Instances trainingSet = null;
-    private int ngramsLength;
-    private int ngramsQuantity;
-    private Pattern maliciousKeywords;
-    private Pattern suspiciousKeywords;
-    private Set<String> whitelist;
+	private static FilteredClassifier fc = null;
+	private static Instances trainingSet = null;
+	private int ngramsLength;
+	private int ngramsQuantity;
+	private Set<String> whitelist;
+	private final String[] maliciousWords;
+	private final String[] suspiciousWords;
 
-    public JSWekaAnalyzer(String maliciousKeywords, String suspiciousKeywords, int ngramsLength, int ngramsQuantity, String libPath, Set<String> whitelist) {
-		this.maliciousKeywords = Pattern.compile(maliciousKeywords, Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-		this.suspiciousKeywords = Pattern.compile(suspiciousKeywords, Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+	public JSWekaAnalyzer(String[] maliciousKeywords, String[] suspiciousKeywords, int ngramsLength, int ngramsQuantity, String libPath,
+			Set<String> whitelist) {
 		this.ngramsLength = ngramsLength;
 		this.ngramsQuantity = ngramsQuantity;
 		this.whitelist = whitelist;
+		this.maliciousWords = maliciousKeywords;
+		this.suspiciousWords = suspiciousKeywords;
 	}
 
-	public JSContextResults process(JSContext context) {
-		JSContextResults.Builder resultsBuilder = JSContextResults.newBuilder().setId(context.getId());
-		String jsSource = context.getSource();
+	public JSContextResults process(int id, String jsSrcFileName) {
+		JSContextResults.Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
 
-		resultsBuilder.addAllMaliciousKeywords(matchKeywords(maliciousKeywords.matcher(jsSource)));
-		resultsBuilder.addAllSuspiciousKeywords(matchKeywords(suspiciousKeywords.matcher(jsSource)));
+		String md5hash = "";
+		BufferedInputStream bis = null;
+		try {
+			// Check for malicious and suspicious keywords.
+			bis = new BufferedInputStream(new FileInputStream(jsSrcFileName));
+			addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
+			
+			// Calculate MD5 hash.
+			md5hash = md5hashFromFile(bis);
+		} catch (IOException e) {
+			// WST poprawic wyjatek
+			e.printStackTrace();
+		} finally {
+			if (bis != null) {
+				try {
+					bis.close();
+				} catch (IOException e) {
+					// WST poprawic wyjatek
+					e.printStackTrace();
+				}
+			}
+		}
 
-		JSClass jsClassify = classifyString(jsSource);
-		resultsBuilder.setClassification(jsClassify);
-
-		String md5hash = md5hash(jsSource);
+		// Check is script is whitelisted.
 		boolean isWhitelisted = whitelist.contains(md5hash);
 		resultsBuilder.setWhitelisted(isWhitelisted);
+
+		// Run weka check.
+		JSClass jsClassify = classifyString(jsSrcFileName);
+		resultsBuilder.setClassification(jsClassify);
 
 		return resultsBuilder.build();
 	}
 
-	private Set<String> matchKeywords(Matcher matcher){
-		Set<String> keywords = new HashSet<String>();
-		while (matcher.find()){
-        	keywords.add(matcher.group(0));
+	private void addMaliciousAndSuspiciousKeywords(JSContextResults.Builder resultsBuilder, BufferedInputStream bufferedInputStream)
+			throws IOException {
+		// Results init.
+		Set<String> maliciousWordsFound = new HashSet<>();
+		Set<String> suspiciousWordsFound = new HashSet<>();
+
+		// Find shortest and longest word.
+		int shortestWordSize = Integer.MAX_VALUE;
+		int longestWordSize = Integer.MIN_VALUE;
+		int tempInt;
+		for (String word : maliciousWords) {
+			tempInt = word.length();
+			if (tempInt < shortestWordSize) {
+				shortestWordSize = tempInt;
+			}
+			if (tempInt > longestWordSize) {
+				longestWordSize = tempInt;
+			}
 		}
-		return keywords;
+		for (String word : suspiciousWords) {
+			tempInt = word.length();
+			if (tempInt < shortestWordSize) {
+				shortestWordSize = tempInt;
+			}
+			if (tempInt > longestWordSize) {
+				longestWordSize = tempInt;
+			}
+		}
+
+		// We have to create buffer size of longest word.
+		CircularStringBuffer circularBuffer = new CircularStringBuffer(longestWordSize);
+
+		// Read full buffer.
+		boolean isEofReached = false;
+		for (tempInt = 0; tempInt < longestWordSize; tempInt++) {
+			if (isEofReached = readOneChar(bufferedInputStream, circularBuffer)) {
+				break;
+			}
+		}
+
+		// Start searching.
+		while (!isEofReached) {
+			// Read one char into buffer.
+			isEofReached = readOneChar(bufferedInputStream, circularBuffer);
+			if (!isEofReached) {
+				checkWords(circularBuffer, maliciousWordsFound, suspiciousWordsFound);
+			}
+		}
+
+		// EOF reach but we have not finished yet.
+		for (tempInt = shortestWordSize; tempInt < longestWordSize; tempInt++) {
+			circularBuffer.add(' ');
+			checkWords(circularBuffer, maliciousWordsFound, suspiciousWordsFound);
+		}
+
+		// Store results.
+		resultsBuilder.addAllMaliciousKeywords(maliciousWordsFound);
+		resultsBuilder.addAllSuspiciousKeywords(suspiciousWordsFound);
 	}
 
-    public JSClass classifyString(String testJS) {
-    	if (testJS == null) {
-        	LOGGER.error("test string is null");
-        }
-        else {
-	        String ngrams = NGramsCalc.getNgramsForString(testJS, ngramsLength, ngramsQuantity);
-
-	        if (ngrams == null){
-	        	LOGGER.info("No ngrams extracted, probably js is too short: {} characters.", testJS.length());
-	        }
-	        else{
-
-		        StringTokenizer st = new StringTokenizer(ngrams, " ");
-		        if (st.countTokens() >= ngramsQuantity) {
-
-		        	Instance t = new Instance(2);
-			        t.setDataset(trainingSet);
-			        t.setValue(0, ngrams);
-
-			        try {
-			            double dd = fc.classifyInstance(t);
-			            return JSClass.valueOf(trainingSet.classAttribute().value((int) dd).toUpperCase());
-			        } catch (Exception e) {
-			        	LOGGER.error(e.getMessage(),e);
-			        }
-		        }
-	        }
-        }
-        return JSClass.UNCLASSIFIED;
-    }
-
-    private void createTrainingSet(String arffFileName, String classifierName) {
-        try {
-            ConverterUtils.DataSource source = new ConverterUtils.DataSource(arffFileName);
-            Instances trainingSet = source.getDataSet();
-            if (trainingSet.classIndex() == -1) {
-                trainingSet.setClassIndex(trainingSet.numAttributes() - 1);
-            }
-
-            Classifier naiveBayes = (Classifier) Class.forName(classifierName).newInstance();
-
-
-            FilteredClassifier fc = new FilteredClassifier();
-            fc.setClassifier(naiveBayes);
-            fc.setFilter(new StringToWordVector());
-
-            fc.buildClassifier(trainingSet);
-            JSWekaAnalyzer.trainingSet = trainingSet;
-            JSWekaAnalyzer.fc = fc;
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-            JSWekaAnalyzer.fc = null;
-        }
-    }
-
-    public void prepare(String arffFileName, String classifierName) throws IllegalStateException {
-        if (trainingSet == null){
-	        createTrainingSet(arffFileName, classifierName);
-        }
-    }
-
 	/**
-	 * Returns javascript trimmed only to digits and letters [0-9A-Za-z].
+	 * Reads one character from file and adds to buffer. Returns true if EOF hit.
 	 * 
-	 * @param input
-	 *            Javascript source.
-	 * @return Trimmed source.
+	 * @param stream
+	 * @param buffer
+	 * @return Returns true if EOF hit, false otherwise.
+	 * @throws IOException
 	 */
-	private String jsSourceTrimmed(String input) {
-		if (input != null) {
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < input.length(); i++) {
-				char ch = input.charAt(i);
-				if (isCharAccepted(ch)) {
-					sb.append(ch);
+	private boolean readOneChar(InputStream stream, CircularStringBuffer buffer) throws IOException {
+		boolean eof = false;
+		int chInt = stream.read();
+		if (chInt == -1) {
+			eof = true;
+		} else {
+			buffer.add((char) chInt);
+		}
+		return eof;
+	}
+
+	private void checkWords(CircularStringBuffer buffer, Set<String> maliciousWordsFound, Set<String> suspiciousWordsFound) {
+		// Get string from buffer.
+		String strToCheck = buffer.getAsString();
+
+		// Search.
+		for (String s : maliciousWords) {
+			if (strToCheck.startsWith(s)) {
+				maliciousWordsFound.add(s);
+			}
+		}
+		for (String s : suspiciousWords) {
+			if (strToCheck.startsWith(s)) {
+				suspiciousWordsFound.add(s);
+			}
+		}
+	}
+
+	public JSClass classifyString(String pathToFile) {
+		String ngrams = NGramsCalc.getNgramsForFile(pathToFile, ngramsLength, ngramsQuantity);
+
+		if (ngrams == null) {
+			LOGGER.info("No ngrams extracted, probably JS source is too short");
+		} else {
+			StringTokenizer st = new StringTokenizer(ngrams, " ");
+			if (st.countTokens() >= ngramsQuantity) {
+
+				Instance t = new Instance(2);
+				t.setDataset(trainingSet);
+				t.setValue(0, ngrams);
+
+				try {
+					double dd = fc.classifyInstance(t);
+					return JSClass.valueOf(trainingSet.classAttribute().value((int) dd).toUpperCase());
+				} catch (Exception e) {
+					LOGGER.error(e.getMessage(), e);
 				}
 			}
-			return sb.toString();
-		} else {
-			return "";
 		}
+		return JSClass.UNCLASSIFIED;
 	}
 
-	/**
-	 * Checks if character is accepted in trimmed javascript source.
-	 * 
-	 * @param ch
-	 * @return True if character has been accepted and should be present in trimmed string, otherwise false.
-	 */
-	private boolean isCharAccepted(char ch) {
-		if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z')) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Returns hex string representation of MD5 hash for given string.
-	 * 
-	 * @param jsSource
-	 * @return
-	 */
-	private String md5hash(String jsSource) {
-		jsSource = jsSourceTrimmed(jsSource);
+	private void createTrainingSet(String arffFileName, String classifierName) {
 		try {
-			byte[] byteHash = MessageDigest.getInstance("MD5").digest(jsSource.getBytes());
-			String stringHash = new String(Hex.encodeHex(byteHash));
-			return stringHash;
-		} catch (NoSuchAlgorithmException e) {
-			return "";
+			ConverterUtils.DataSource source = new ConverterUtils.DataSource(arffFileName);
+			Instances trainingSet = source.getDataSet();
+			if (trainingSet.classIndex() == -1) {
+				trainingSet.setClassIndex(trainingSet.numAttributes() - 1);
+			}
+
+			Classifier naiveBayes = (Classifier) Class.forName(classifierName).newInstance();
+
+			FilteredClassifier fc = new FilteredClassifier();
+			fc.setClassifier(naiveBayes);
+			fc.setFilter(new StringToWordVector());
+
+			fc.buildClassifier(trainingSet);
+			JSWekaAnalyzer.trainingSet = trainingSet;
+			JSWekaAnalyzer.fc = fc;
+		} catch (Exception e) {
+			LOGGER.error(e.getMessage(), e);
+			JSWekaAnalyzer.fc = null;
 		}
+	}
+
+	public void prepare(String arffFileName, String classifierName) throws IllegalStateException {
+		if (trainingSet == null) {
+			createTrainingSet(arffFileName, classifierName);
+		}
+	}
+
+	/**
+	 * Returns hex string representation of MD5 hash for given file.
+	 * 
+	 * @param fileName
+	 * @return
+	 * @throws IOException
+	 */
+	public String md5hashFromFile(BufferedInputStream bufferedInputStream) throws IOException {
+		String result = null;
+		InputStream dis = null;
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			dis = new DigestInputStream(new WhiteListFileInputStream(bufferedInputStream), md);
+			while (dis.read() != -1) {
+				// Nothing to do.
+			}
+			char[] md5 = Hex.encodeHex(md.digest());
+			result = String.valueOf(md5);
+		} catch (NoSuchAlgorithmException e) {
+			// WST poprawic wyjatek
+			e.printStackTrace();
+			result = "";
+		} finally {
+			if (dis != null) {
+				dis.close();
+			}
+		}
+		return result;
 	}
 }

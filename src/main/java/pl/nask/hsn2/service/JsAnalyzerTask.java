@@ -20,7 +20,10 @@
 package pl.nask.hsn2.service;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
@@ -47,8 +50,10 @@ public class JsAnalyzerTask implements Task {
 	private static final Logger LOGGER = LoggerFactory.getLogger(JsAnalyzerTask.class);
 	private final TaskContext jobContext;
 
-	private String maliciousKeywords = "Shell\\.Application|ADODB\\.Stream|WScript\\.Shell|\\.exe|\\.bat|ms0[6-9]|shellcode|block|heap|spray|exploit|overflow|savetofile";
-	private String suspiciousKeywords = "top\\.location|document\\.location|window\\.location|document\\.write|document\\.writeln|eval|location\\.replace|location\\.reload|location\\.href|document\\.body\\.innerhtml|location=";
+	private static final String[] maliciousKeywords = { "Shell.Application", "ADODB.Stream", "WScript.Shell", ".exe", ".bat", "ms06",
+			"ms07", "ms08", "ms09", "shellcode", "block", "heap", "spray", "exploit", "overflow", "savetofile" };
+	private static final String[] suspiciousKeywords = { "top.location", "document.location", "window.location", "document.write",
+			"document.writeln", "eval", "location.replace", "location.reload", "location.href", "document.body.innerhtml", "location=" };
 	private Long jsContextId;
 	private JSWekaAnalyzer weka;
 	private Set<String> whitelist;
@@ -95,16 +100,20 @@ public class JsAnalyzerTask implements Task {
 	private void setParameters(ParametersWrapper parameters) {
 		try {
 			String mKeywords = parameters.get("keywords_malicious");
-			if(mKeywords != null)
-				maliciousKeywords = mKeywords;
+			if(mKeywords != null) {
+				// WST poprawic maliciousKeywords z parametru
+				//maliciousKeywords = mKeywords;
+			}
 		} catch (RequiredParameterMissingException e) {
 			LOGGER.debug("Used default malicious keywords");
 		}
 
 		try {
 			String sKeywords = parameters.get("keywords_suspicious");
-			if(sKeywords != null)
-				suspiciousKeywords = sKeywords;
+			if(sKeywords != null) {
+				// WST poprawic maliciousKeywords z parametru
+				//suspiciousKeywords = sKeywords;
+			}
 		} catch (RequiredParameterMissingException e) {
 			LOGGER.debug("Used default suspicious keywords");
 		}
@@ -125,8 +134,12 @@ public class JsAnalyzerTask implements Task {
 
 				ResultsBuilder resultsBuilder = new ResultsBuilder();
 
-				for(JSContext context : contextList.getContextsList()){
-					JSContextResults contextResults = weka.process(context);
+				for(JSContext context : contextList.getContextsList()) {
+					// Prepare temporary file.
+					String pathToFile = prepareTempJsSource(context);
+					
+					// Check temporary file.
+					JSContextResults contextResults = weka.process(context.getId(), pathToFile);
 					resultsBuilder.addResults(contextResults);
 				}
 
@@ -145,6 +158,38 @@ public class JsAnalyzerTask implements Task {
 		else{
 			LOGGER.info("Task skipped, not js");
 		}
+	}
+
+	private String prepareTempJsSource(JSContext context) {
+		// Create unique path to file.
+		String fileName = System.getProperty("java.io.tmpdir") + "hsn2-js-sta_" + context.getId() + System.currentTimeMillis();
+		File f;
+		do {
+			f = new File(fileName);
+			fileName += "-";
+		} while (f.exists());
+
+		// Write source to file.
+		BufferedWriter bw = null;
+		try {
+			bw = new BufferedWriter(new FileWriter(f));
+			bw.write(context.getSource());
+		} catch (IOException e) {
+			// WST fix exception
+			e.printStackTrace();
+		} finally {
+			if (bw != null) {
+				try {
+					bw.close();
+				} catch (IOException e) {
+					// WST fix exception
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		// Return path file.
+		return fileName;
 	}
 
 	private JSContextList downloadJsContextList() throws StorageException, IOException{

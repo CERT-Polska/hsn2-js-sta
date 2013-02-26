@@ -20,6 +20,7 @@
 package pl.nask.hsn2.service.analysis;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,16 +64,17 @@ public class JSWekaAnalyzer {
 		this.suspiciousWords = suspiciousKeywords;
 	}
 
-	public JSContextResults process(int id, String jsSrcFileName) {
+	public JSContextResults process(int id, File jsSrcFile) {
 		JSContextResults.Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
 
 		String md5hash = "";
 		BufferedInputStream bis = null;
 		try {
 			// Check for malicious and suspicious keywords.
-			bis = new BufferedInputStream(new FileInputStream(jsSrcFileName));
+			bis = new BufferedInputStream(new FileInputStream(jsSrcFile));
+			bis.mark(Integer.MAX_VALUE);
 			addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
-			
+
 			// Calculate MD5 hash.
 			md5hash = md5hashFromFile(bis);
 		} catch (IOException e) {
@@ -94,7 +96,7 @@ public class JSWekaAnalyzer {
 		resultsBuilder.setWhitelisted(isWhitelisted);
 
 		// Run weka check.
-		JSClass jsClassify = classifyString(jsSrcFileName);
+		JSClass jsClassify = classifyString(jsSrcFile);
 		resultsBuilder.setClassification(jsClassify);
 
 		return resultsBuilder.build();
@@ -196,8 +198,8 @@ public class JSWekaAnalyzer {
 		}
 	}
 
-	public JSClass classifyString(String pathToFile) {
-		String ngrams = NGramsCalc.getNgramsForFile(pathToFile, ngramsLength, ngramsQuantity);
+	public JSClass classifyString(File file) {
+		String ngrams = NGramsCalc.getNgramsForFile(file.getPath(), ngramsLength, ngramsQuantity);
 
 		if (ngrams == null) {
 			LOGGER.info("No ngrams extracted, probably JS source is too short");
@@ -227,13 +229,10 @@ public class JSWekaAnalyzer {
 			if (trainingSet.classIndex() == -1) {
 				trainingSet.setClassIndex(trainingSet.numAttributes() - 1);
 			}
-
 			Classifier naiveBayes = (Classifier) Class.forName(classifierName).newInstance();
-
 			FilteredClassifier fc = new FilteredClassifier();
 			fc.setClassifier(naiveBayes);
 			fc.setFilter(new StringToWordVector());
-
 			fc.buildClassifier(trainingSet);
 			JSWekaAnalyzer.trainingSet = trainingSet;
 			JSWekaAnalyzer.fc = fc;
@@ -257,6 +256,7 @@ public class JSWekaAnalyzer {
 	 * @throws IOException
 	 */
 	public String md5hashFromFile(BufferedInputStream bufferedInputStream) throws IOException {
+		bufferedInputStream.reset();
 		String result = null;
 		InputStream dis = null;
 		try {

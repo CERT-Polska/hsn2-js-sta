@@ -12,6 +12,9 @@ public class CircularStringBuffer {
 	private StringBuilder buffer;
 
 	public CircularStringBuffer(int size) {
+		if (size < 1) {
+			size = 1;
+		}
 		buffer = new StringBuilder(size);
 		for (int i = 0; i < size; i++) {
 			buffer.append(' ');

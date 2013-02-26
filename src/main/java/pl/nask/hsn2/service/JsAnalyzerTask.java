@@ -58,12 +58,14 @@ public class JsAnalyzerTask implements Task {
 	private JSWekaAnalyzer weka;
 	private Set<String> whitelist;
 
-	public JsAnalyzerTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper inputData, JsCommandLineParams cmd) throws IllegalStateException {
+	public JsAnalyzerTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper inputData, JsCommandLineParams cmd)
+			throws IllegalStateException {
 		this.jobContext = jobContext;
 		jsContextId = inputData.getReferenceId("js_context_list");
 		setParameters(parameters);
 		prepareWhitelist(cmd.getWhitelistPath());
-		weka = new JSWekaAnalyzer(maliciousKeywords, suspiciousKeywords, cmd.getNgramLength(), cmd.getNgramQuantity(), cmd.getLibPath(), whitelist);
+		weka = new JSWekaAnalyzer(maliciousKeywords, suspiciousKeywords, cmd.getNgramLength(), cmd.getNgramQuantity(), cmd.getLibPath(),
+				whitelist);
 		weka.prepare(cmd.getTrainingSetName(), cmd.getClassifierName());
 	}
 
@@ -100,9 +102,9 @@ public class JsAnalyzerTask implements Task {
 	private void setParameters(ParametersWrapper parameters) {
 		try {
 			String mKeywords = parameters.get("keywords_malicious");
-			if(mKeywords != null) {
+			if (mKeywords != null) {
 				// WST poprawic maliciousKeywords z parametru
-				//maliciousKeywords = mKeywords;
+				// maliciousKeywords = mKeywords;
 			}
 		} catch (RequiredParameterMissingException e) {
 			LOGGER.debug("Used default malicious keywords");
@@ -110,9 +112,9 @@ public class JsAnalyzerTask implements Task {
 
 		try {
 			String sKeywords = parameters.get("keywords_suspicious");
-			if(sKeywords != null) {
+			if (sKeywords != null) {
 				// WST poprawic maliciousKeywords z parametru
-				//suspiciousKeywords = sKeywords;
+				// suspiciousKeywords = sKeywords;
 			}
 		} catch (RequiredParameterMissingException e) {
 			LOGGER.debug("Used default suspicious keywords");
@@ -125,8 +127,8 @@ public class JsAnalyzerTask implements Task {
 	}
 
 	@Override
-	public void process() throws ParameterException, ResourceException,	StorageException {
-		if(jsContextId != null){
+	public void process() throws ParameterException, ResourceException, StorageException {
+		if (jsContextId != null) {
 			jobContext.addTimeAttribute("js_sta_time_begin", System.currentTimeMillis());
 
 			try {
@@ -134,13 +136,17 @@ public class JsAnalyzerTask implements Task {
 
 				ResultsBuilder resultsBuilder = new ResultsBuilder();
 
-				for(JSContext context : contextList.getContextsList()) {
+				for (JSContext context : contextList.getContextsList()) {
 					// Prepare temporary file.
-					String pathToFile = prepareTempJsSource(context);
-					
+					File tempFile = prepareTempJsSource(context);
+
 					// Check temporary file.
-					JSContextResults contextResults = weka.process(context.getId(), pathToFile);
+					JSContextResults contextResults = weka.process(context.getId(), tempFile);
 					resultsBuilder.addResults(contextResults);
+					
+					if (!tempFile.delete()) {
+						LOGGER.warn("Could not delete temp file: {}", tempFile);
+					}
 				}
 
 				jobContext.addAttribute("js_classification", resultsBuilder.getClassificationAsString());
@@ -154,19 +160,18 @@ public class JsAnalyzerTask implements Task {
 			}
 
 			jobContext.addTimeAttribute("js_sta_time_end", System.currentTimeMillis());
-		}
-		else{
+		} else {
 			LOGGER.info("Task skipped, not js");
 		}
 	}
 
-	private String prepareTempJsSource(JSContext context) {
+	private File prepareTempJsSource(JSContext context) {
 		// Create unique path to file.
 		String fileName = System.getProperty("java.io.tmpdir") + "hsn2-js-sta_" + context.getId() + System.currentTimeMillis();
 		File f;
 		do {
-			f = new File(fileName);
 			fileName += "-";
+			f = new File(fileName);
 		} while (f.exists());
 
 		// Write source to file.
@@ -187,22 +192,20 @@ public class JsAnalyzerTask implements Task {
 				}
 			}
 		}
-		
+
 		// Return path file.
-		return fileName;
+		return f;
 	}
 
-	private JSContextList downloadJsContextList() throws StorageException, IOException{
+	private JSContextList downloadJsContextList() throws StorageException, IOException {
 		InputStream is = null;
-		try{
+		try {
 			is = jobContext.getFileAsInputStream(jsContextId);
-		return JSContextList.parseFrom(is);
-		}
-		finally{
-			if(is != null){
+			return JSContextList.parseFrom(is);
+		} finally {
+			if (is != null) {
 				is.close();
 			}
 		}
 	}
-
 }

@@ -51,14 +51,15 @@ public class JsAnalyzerTests {
 		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, "", whitelist);
 
 		for (int i = 0; i < jsSourcesWhitelistTrue.length; i++) {
-			String filename = prepareTempJsSource(jsSourcesWhitelistTrue[i]);
-
-			// test
-			JSContextResults result = analyzer.process(i, new File(filename));
+			File f = new File(prepareTempJsSource(jsSourcesWhitelistTrue[i]));
+			JSContextResults result = analyzer.process(i, f);
 			boolean isWhitelisted = result.getWhitelisted();
 			LOGGER.info("Source[{}] whitelisted? {}", i, isWhitelisted);
 			LOGGER.info("Source[{}]:\n{}", i, jsSourcesWhitelistTrue[i]);
 			Assert.assertTrue(isWhitelisted, "Should be whitelisted");
+			if (!f.delete()) {
+				LOGGER.warn("Could not delete temp file: {}", f);
+			}
 		}
 	}
 
@@ -70,14 +71,15 @@ public class JsAnalyzerTests {
 		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, "", whitelist);
 
 		for (int i = 0; i < jsSourcesWhitelistFalse.length; i++) {
-			String filename = prepareTempJsSource(jsSourcesWhitelistFalse[i]);
-
-			// test
-			JSContextResults result = analyzer.process(i, new File(filename));
+			File f = new File(prepareTempJsSource(jsSourcesWhitelistFalse[i]));
+			JSContextResults result = analyzer.process(i, f);
 			boolean isWhitelisted = result.getWhitelisted();
 			LOGGER.info("Source[{}] whitelisted? {}", i, isWhitelisted);
 			LOGGER.info("Source[{}]:\n{}", i, jsSourcesWhitelistFalse[i]);
 			Assert.assertFalse(isWhitelisted, "Should not be whitelisted");
+			if (!f.delete()) {
+				LOGGER.warn("Could not delete temp file: {}", f);
+			}
 		}
 	}
 

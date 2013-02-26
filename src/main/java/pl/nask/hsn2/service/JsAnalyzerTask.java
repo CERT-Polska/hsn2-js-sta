@@ -143,7 +143,7 @@ public class JsAnalyzerTask implements Task {
 					// Check temporary file.
 					JSContextResults contextResults = weka.process(context.getId(), tempFile);
 					resultsBuilder.addResults(contextResults);
-					
+
 					if (!tempFile.delete()) {
 						LOGGER.warn("Could not delete temp file: {}", tempFile);
 					}
@@ -167,7 +167,14 @@ public class JsAnalyzerTask implements Task {
 
 	private File prepareTempJsSource(JSContext context) {
 		// Create unique path to file.
-		String fileName = System.getProperty("java.io.tmpdir") + "hsn2-js-sta_" + context.getId() + System.currentTimeMillis();
+		String tmpPath = System.getProperty("java.io.tmpdir");
+		String fileSeparator = System.getProperty("file.separator");
+		String fileName = tmpPath + fileSeparator + "hsn2-js-sta_" + context.getId() + System.currentTimeMillis();
+
+		// Some platforms provide file-separator at the end of system temp path and some doesn't. This is to make sure
+		// there is only one separator between system temp path and newly created file name.
+		fileName = fileName.replace(fileSeparator + fileSeparator, fileSeparator);
+
 		File f;
 		do {
 			fileName += "-";

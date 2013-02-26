@@ -85,7 +85,10 @@ public class JsAnalyzerTests {
 
 	private String prepareTempJsSource(String source) {
 		// Create unique path to file.
-		String fileName = System.getProperty("java.io.tmpdir") + counter + "hsn2-js-sta_" + System.currentTimeMillis();
+		String tmpPath = System.getProperty("java.io.tmpdir");
+		String fileSeparator = System.getProperty("file.separator");
+		String fileName = tmpPath + fileSeparator + "hsn2-js-sta_" + counter + System.currentTimeMillis();
+		fileName = fileName.replace(fileSeparator + fileSeparator, fileSeparator);
 		counter++;
 		File f;
 		do {

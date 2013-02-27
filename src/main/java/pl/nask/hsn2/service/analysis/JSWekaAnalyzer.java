@@ -54,6 +54,8 @@ public class JSWekaAnalyzer {
 	private Set<String> whitelist;
 	private final String[] maliciousWords;
 	private final String[] suspiciousWords;
+	private int shortestWordSize = Integer.MAX_VALUE;
+	private int longestWordSize = Integer.MIN_VALUE;
 
 	public JSWekaAnalyzer(String[] maliciousKeywords, String[] suspiciousKeywords, int ngramsLength, int ngramsQuantity,
 			Set<String> whitelist) {
@@ -68,17 +70,17 @@ public class JSWekaAnalyzer {
 		JSContextResults.Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
 
 		// Check for malicious and suspicious keywords.
-		BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile));
-		bis.mark(Integer.MAX_VALUE);
-		addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
+		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile))) {
+			bis.mark(Integer.MAX_VALUE);
+			addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
 
-		// Calculate MD5 hash.
-		String md5hash = md5hashFromFile(bis);
-		bis.close();
+			// Calculate MD5 hash.
+			String md5hash = md5hashFromFile(bis);
 
-		// Check is script is whitelisted.
-		boolean isWhitelisted = whitelist.contains(md5hash);
-		resultsBuilder.setWhitelisted(isWhitelisted);
+			// Check is script is whitelisted.
+			boolean isWhitelisted = whitelist.contains(md5hash);
+			resultsBuilder.setWhitelisted(isWhitelisted);
+		}
 
 		// Run weka check.
 		JSClass jsClassify = classifyString(jsSrcFile);
@@ -87,53 +89,43 @@ public class JSWekaAnalyzer {
 		return resultsBuilder.build();
 	}
 
+	private void updateLongestAndShortestWordSize(String[] words) {
+		int tempInt;
+		for (String word : words) {
+			tempInt = word.length();
+			if (tempInt < shortestWordSize) {
+				shortestWordSize = tempInt;
+			}
+			if (tempInt > longestWordSize) {
+				longestWordSize = tempInt;
+			}
+		}
+	}
+
 	private void addMaliciousAndSuspiciousKeywords(JSContextResults.Builder resultsBuilder, BufferedInputStream bufferedInputStream)
 			throws IOException {
-		// Results init.
-		Set<String> maliciousWordsFound = new HashSet<>();
-		Set<String> suspiciousWordsFound = new HashSet<>();
-
 		// Find shortest and longest word.
-		int shortestWordSize = Integer.MAX_VALUE;
-		int longestWordSize = Integer.MIN_VALUE;
-		int tempInt;
-		for (String word : maliciousWords) {
-			tempInt = word.length();
-			if (tempInt < shortestWordSize) {
-				shortestWordSize = tempInt;
-			}
-			if (tempInt > longestWordSize) {
-				longestWordSize = tempInt;
-			}
-		}
-		for (String word : suspiciousWords) {
-			tempInt = word.length();
-			if (tempInt < shortestWordSize) {
-				shortestWordSize = tempInt;
-			}
-			if (tempInt > longestWordSize) {
-				longestWordSize = tempInt;
-			}
-		}
+		shortestWordSize = Integer.MAX_VALUE;
+		longestWordSize = Integer.MIN_VALUE;
+		updateLongestAndShortestWordSize(maliciousWords);
+		updateLongestAndShortestWordSize(suspiciousWords);
 
 		// We have to create buffer size of longest word.
 		CircularStringBuffer circularBuffer = new CircularStringBuffer(longestWordSize);
 
 		// Read full buffer.
-		boolean isEofReached = false;
+		int tempInt;
 		for (tempInt = 0; tempInt < longestWordSize - 1; tempInt++) {
-			if (isEofReached = readOneChar(bufferedInputStream, circularBuffer)) {
+			if (readOneChar(bufferedInputStream, circularBuffer)) {
 				break;
 			}
 		}
 
 		// Start searching.
-		while (!isEofReached) {
-			// Read one char into buffer.
-			isEofReached = readOneChar(bufferedInputStream, circularBuffer);
-			if (!isEofReached) {
-				checkWords(circularBuffer, maliciousWordsFound, suspiciousWordsFound);
-			}
+		Set<String> maliciousWordsFound = new HashSet<>();
+		Set<String> suspiciousWordsFound = new HashSet<>();
+		while (!readOneChar(bufferedInputStream, circularBuffer)) {
+			checkWords(circularBuffer, maliciousWordsFound, suspiciousWordsFound);
 		}
 
 		// EOF reach but we have not finished yet.
@@ -145,6 +137,22 @@ public class JSWekaAnalyzer {
 		// Store results.
 		resultsBuilder.addAllMaliciousKeywords(maliciousWordsFound);
 		resultsBuilder.addAllSuspiciousKeywords(suspiciousWordsFound);
+	}
+
+	/**
+	 * Checks if there are any malicious or suspicious words in buffer.
+	 * 
+	 * @param circularBuffer
+	 *            Buffer to read from.
+	 * @param maliciousResults
+	 *            Set to store malicious words found.
+	 * @param suspiciousResults
+	 *            Set to store suspicious words found.
+	 */
+	private void checkWords(CircularStringBuffer circularBuffer, Set<String> maliciousResults, Set<String> suspiciousResults) {
+		String word = circularBuffer.getAsString();
+		checkWord(word, maliciousWords, maliciousResults);
+		checkWord(word, suspiciousWords, suspiciousResults);
 	}
 
 	/**
@@ -166,19 +174,18 @@ public class JSWekaAnalyzer {
 		return eof;
 	}
 
-	private void checkWords(CircularStringBuffer buffer, Set<String> maliciousWordsFound, Set<String> suspiciousWordsFound) {
-		// Get string from buffer.
-		String strToCheck = buffer.getAsString();
-
+	/**
+	 * Checks if pattern contains given word and if it is, adds it to result set.
+	 * 
+	 * @param word
+	 * @param pattern
+	 * @param results
+	 */
+	private void checkWord(String word, String[] pattern, Set<String> results) {
 		// Search.
-		for (String s : maliciousWords) {
-			if (strToCheck.startsWith(s)) {
-				maliciousWordsFound.add(s);
-			}
-		}
-		for (String s : suspiciousWords) {
-			if (strToCheck.startsWith(s)) {
-				suspiciousWordsFound.add(s);
+		for (String s : pattern) {
+			if (word.startsWith(s)) {
+				results.add(s);
 			}
 		}
 	}
@@ -243,22 +250,19 @@ public class JSWekaAnalyzer {
 	public String md5hashFromFile(BufferedInputStream bufferedInputStream) throws IOException {
 		bufferedInputStream.reset();
 		String result = null;
-		InputStream dis = null;
+		MessageDigest md;
 		try {
-			MessageDigest md = MessageDigest.getInstance("MD5");
-			dis = new DigestInputStream(new WhiteListFileInputStream(bufferedInputStream), md);
-			while (dis.read() != -1) {
-				// Nothing to do.
+			md = MessageDigest.getInstance("MD5");
+			try (InputStream dis = new DigestInputStream(new WhiteListFileInputStream(bufferedInputStream), md)) {
+				while (dis.read() != -1) {
+					// Nothing to do.
+				}
+				char[] md5 = Hex.encodeHex(md.digest());
+				result = String.valueOf(md5);
 			}
-			char[] md5 = Hex.encodeHex(md.digest());
-			result = String.valueOf(md5);
 		} catch (NoSuchAlgorithmException e) {
 			LOGGER.error("Could not create MD5 hash for whitelisting.\n{}", e);
 			result = "";
-		} finally {
-			if (dis != null) {
-				dis.close();
-			}
 		}
 		return result;
 	}

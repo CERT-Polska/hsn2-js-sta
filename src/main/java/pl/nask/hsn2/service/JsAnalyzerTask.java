@@ -67,8 +67,7 @@ public class JsAnalyzerTask implements Task {
 		jsContextId = inputData.getReferenceId("js_context_list");
 		setParameters(parameters);
 		prepareWhitelist(cmd.getWhitelistPath());
-		weka = new JSWekaAnalyzer(maliciousKeywords, suspiciousKeywords, cmd.getNgramLength(), cmd.getNgramQuantity(),
-				whitelist);
+		weka = new JSWekaAnalyzer(maliciousKeywords, suspiciousKeywords, cmd.getNgramLength(), cmd.getNgramQuantity(), whitelist);
 		weka.prepare(cmd.getTrainingSetName(), cmd.getClassifierName());
 	}
 
@@ -227,9 +226,9 @@ public class JsAnalyzerTask implements Task {
 		}
 
 		// Write source to file.
-		BufferedWriter bw = new BufferedWriter(new FileWriter(f));
-		bw.write(context.getSource());
-		bw.close();
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
+			bw.write(context.getSource());
+		}
 
 		// Return path file.
 		return f;

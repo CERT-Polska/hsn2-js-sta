@@ -83,40 +83,25 @@ public class JsAnalyzerTests {
 		}
 	}
 
-	private String prepareTempJsSource(String source) {
+	private String prepareTempJsSource(String source) throws IOException {
 		// Create unique path to file.
-		String tmpPath = System.getProperty("java.io.tmpdir");
-		String fileSeparator = System.getProperty("file.separator");
-		String fileName = tmpPath + fileSeparator + "hsn2-js-sta_" + counter + System.currentTimeMillis();
-		fileName = fileName.replace(fileSeparator + fileSeparator, fileSeparator);
-		counter++;
-		File f;
-		do {
-			fileName += "-";
-			f = new File(fileName);
-		} while (f.exists());
-
-		// Write source to file.
-		BufferedWriter bw = null;
-		try {
-			bw = new BufferedWriter(new FileWriter(f));
-			bw.write(source);
-		} catch (IOException e) {
-			// WST fix exception
-			e.printStackTrace();
-		} finally {
-			if (bw != null) {
-				try {
-					bw.close();
-				} catch (IOException e) {
-					// WST fix exception
-					e.printStackTrace();
-				}
+		File f = new File(System.getProperty("java.io.tmpdir"));
+		String tempFileName = f.getAbsolutePath() + File.separator + "hsn2-js-sta_" + counter + System.currentTimeMillis();
+		while (true) {
+			f = new File(tempFileName);
+			if (!f.exists()) {
+				break;
 			}
+			tempFileName += "-";
 		}
 
+		// Write source to file.
+		BufferedWriter bw = new BufferedWriter(new FileWriter(f));
+		bw.write(source);
+		bw.close();
+
 		// Return path file.
-		LOGGER.info("Temp file created: {}", fileName);
-		return fileName;
+		LOGGER.info("Temp file created: {}", tempFileName);
+		return tempFileName;
 	}
 }

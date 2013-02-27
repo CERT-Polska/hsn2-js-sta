@@ -64,32 +64,17 @@ public class JSWekaAnalyzer {
 		this.suspiciousWords = suspiciousKeywords;
 	}
 
-	public JSContextResults process(int id, File jsSrcFile) {
+	public JSContextResults process(int id, File jsSrcFile) throws IOException {
 		JSContextResults.Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
 
-		String md5hash = "";
-		BufferedInputStream bis = null;
-		try {
-			// Check for malicious and suspicious keywords.
-			bis = new BufferedInputStream(new FileInputStream(jsSrcFile));
-			bis.mark(Integer.MAX_VALUE);
-			addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
+		// Check for malicious and suspicious keywords.
+		BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile));
+		bis.mark(Integer.MAX_VALUE);
+		addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
 
-			// Calculate MD5 hash.
-			md5hash = md5hashFromFile(bis);
-		} catch (IOException e) {
-			// WST poprawic wyjatek
-			e.printStackTrace();
-		} finally {
-			if (bis != null) {
-				try {
-					bis.close();
-				} catch (IOException e) {
-					// WST poprawic wyjatek
-					e.printStackTrace();
-				}
-			}
-		}
+		// Calculate MD5 hash.
+		String md5hash = md5hashFromFile(bis);
+		bis.close();
 
 		// Check is script is whitelisted.
 		boolean isWhitelisted = whitelist.contains(md5hash);
@@ -268,8 +253,7 @@ public class JSWekaAnalyzer {
 			char[] md5 = Hex.encodeHex(md.digest());
 			result = String.valueOf(md5);
 		} catch (NoSuchAlgorithmException e) {
-			// WST poprawic wyjatek
-			e.printStackTrace();
+			LOGGER.error("Could not create MD5 hash for whitelisting.\n{}", e);
 			result = "";
 		} finally {
 			if (dis != null) {

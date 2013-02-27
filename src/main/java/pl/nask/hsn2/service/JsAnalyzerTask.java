@@ -26,6 +26,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -49,11 +52,11 @@ public class JsAnalyzerTask implements Task {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JsAnalyzerTask.class);
 	private final TaskContext jobContext;
-
-	private static final String[] maliciousKeywords = { "Shell.Application", "ADODB.Stream", "WScript.Shell", ".exe", ".bat", "ms06",
-			"ms07", "ms08", "ms09", "shellcode", "block", "heap", "spray", "exploit", "overflow", "savetofile" };
-	private static final String[] suspiciousKeywords = { "top.location", "document.location", "window.location", "document.write",
-			"document.writeln", "eval", "location.replace", "location.reload", "location.href", "document.body.innerhtml", "location=" };
+	private String[] maliciousKeywords = { "Shell.Application", "ADODB.Stream", "WScript.Shell", ".exe", ".bat", "ms06", "ms07", "ms08",
+			"ms09", "shellcode", "block", "heap", "spray", "exploit", "overflow", "savetofile", ".Exe", ".eXe", ".exE", ".EXe", ".eXE",
+			".ExE", ".EXE", ".Bat", ".bAt", ".baT", ".BAt", ".bAT", ".BaT" };
+	private String[] suspiciousKeywords = { "top.location", "document.location", "window.location", "document.write", "document.writeln",
+			"eval", "location.replace", "location.reload", "location.href", "document.body.innerhtml" };
 	private Long jsContextId;
 	private JSWekaAnalyzer weka;
 	private Set<String> whitelist;
@@ -103,23 +106,61 @@ public class JsAnalyzerTask implements Task {
 		try {
 			String mKeywords = parameters.get("keywords_malicious");
 			if (mKeywords != null) {
-				// WST poprawic maliciousKeywords z parametru
-				// maliciousKeywords = mKeywords;
+				maliciousKeywords = getWordsFromParameterString(mKeywords);
 			}
 		} catch (RequiredParameterMissingException e) {
 			LOGGER.debug("Used default malicious keywords");
+		} catch (ParseException e) {
+			LOGGER.warn("Could not parse malicious words parameter. Using default.\n{}", e);
 		}
 
 		try {
 			String sKeywords = parameters.get("keywords_suspicious");
 			if (sKeywords != null) {
-				// WST poprawic maliciousKeywords z parametru
-				// suspiciousKeywords = sKeywords;
+				suspiciousKeywords = getWordsFromParameterString(sKeywords);
 			}
 		} catch (RequiredParameterMissingException e) {
 			LOGGER.debug("Used default suspicious keywords");
+		} catch (ParseException e) {
+			LOGGER.warn("Could not parse suspicious words parameter. Using default.\n{}", e);
 		}
 
+	}
+
+	private String[] getWordsFromParameterString(String keywords) throws ParseException {
+		int index = 0;
+		List<String> list = new ArrayList<>();
+		StringBuilder word = new StringBuilder();
+		boolean isEscaped = false;
+		while (index < keywords.length()) {
+			char ch = keywords.charAt(index);
+			if (isEscaped) {
+				// Only backslash or pipe can be escaped.
+				if (ch == '|' || ch == '\\') {
+					word.append(ch);
+				} else {
+					throw new ParseException(keywords, index);
+				}
+				isEscaped = false;
+			} else {
+				if (ch == '\\') {
+					// Escape character.
+					isEscaped = true;
+				} else if (ch == '|') {
+					// Separator.
+					list.add(word.toString());
+					word = new StringBuilder();
+				} else {
+					// Oridinary character, add to word.
+					word.append(ch);
+				}
+			}
+			index++;
+		}
+		if (word.length() > 0) {
+			list.add(word.toString());
+		}
+		return list.toArray(new String[list.size()]);
 	}
 
 	public boolean takesMuchTime() {
@@ -133,7 +174,6 @@ public class JsAnalyzerTask implements Task {
 
 			try {
 				JSContextList contextList = downloadJsContextList();
-
 				ResultsBuilder resultsBuilder = new ResultsBuilder();
 
 				for (JSContext context : contextList.getContextsList()) {
@@ -165,40 +205,31 @@ public class JsAnalyzerTask implements Task {
 		}
 	}
 
-	private File prepareTempJsSource(JSContext context) {
+	/**
+	 * Creates temporary file for JS context.
+	 * 
+	 * @param context
+	 *            JS context.
+	 * @return Temporary file object.
+	 * @throws IOException
+	 *             When there is some issue with IO operations.
+	 */
+	private File prepareTempJsSource(JSContext context) throws IOException {
 		// Create unique path to file.
-		String tmpPath = System.getProperty("java.io.tmpdir");
-		String fileSeparator = System.getProperty("file.separator");
-		String fileName = tmpPath + fileSeparator + "hsn2-js-sta_" + context.getId() + System.currentTimeMillis();
-
-		// Some platforms provide file-separator at the end of system temp path and some doesn't. This is to make sure
-		// there is only one separator between system temp path and newly created file name.
-		fileName = fileName.replace(fileSeparator + fileSeparator, fileSeparator);
-
-		File f;
-		do {
-			fileName += "-";
-			f = new File(fileName);
-		} while (f.exists());
+		File f = new File(System.getProperty("java.io.tmpdir"));
+		String tempFileName = f.getAbsolutePath() + File.separator + "hsn2-js-sta_" + context.getId() + System.currentTimeMillis();
+		while (true) {
+			f = new File(tempFileName);
+			if (!f.exists()) {
+				break;
+			}
+			tempFileName += "-";
+		}
 
 		// Write source to file.
-		BufferedWriter bw = null;
-		try {
-			bw = new BufferedWriter(new FileWriter(f));
-			bw.write(context.getSource());
-		} catch (IOException e) {
-			// WST fix exception
-			e.printStackTrace();
-		} finally {
-			if (bw != null) {
-				try {
-					bw.close();
-				} catch (IOException e) {
-					// WST fix exception
-					e.printStackTrace();
-				}
-			}
-		}
+		BufferedWriter bw = new BufferedWriter(new FileWriter(f));
+		bw.write(context.getSource());
+		bw.close();
 
 		// Return path file.
 		return f;

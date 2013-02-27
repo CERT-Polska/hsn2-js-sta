@@ -55,7 +55,7 @@ public class JSWekaAnalyzer {
 	private final String[] maliciousWords;
 	private final String[] suspiciousWords;
 
-	public JSWekaAnalyzer(String[] maliciousKeywords, String[] suspiciousKeywords, int ngramsLength, int ngramsQuantity, String libPath,
+	public JSWekaAnalyzer(String[] maliciousKeywords, String[] suspiciousKeywords, int ngramsLength, int ngramsQuantity,
 			Set<String> whitelist) {
 		this.ngramsLength = ngramsLength;
 		this.ngramsQuantity = ngramsQuantity;
@@ -121,7 +121,7 @@ public class JSWekaAnalyzer {
 
 		// Read full buffer.
 		boolean isEofReached = false;
-		for (tempInt = 0; tempInt < longestWordSize; tempInt++) {
+		for (tempInt = 0; tempInt < longestWordSize - 1; tempInt++) {
 			if (isEofReached = readOneChar(bufferedInputStream, circularBuffer)) {
 				break;
 			}

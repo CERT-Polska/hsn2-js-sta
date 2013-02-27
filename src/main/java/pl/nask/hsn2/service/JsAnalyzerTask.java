@@ -67,7 +67,7 @@ public class JsAnalyzerTask implements Task {
 		jsContextId = inputData.getReferenceId("js_context_list");
 		setParameters(parameters);
 		prepareWhitelist(cmd.getWhitelistPath());
-		weka = new JSWekaAnalyzer(maliciousKeywords, suspiciousKeywords, cmd.getNgramLength(), cmd.getNgramQuantity(), cmd.getLibPath(),
+		weka = new JSWekaAnalyzer(maliciousKeywords, suspiciousKeywords, cmd.getNgramLength(), cmd.getNgramQuantity(),
 				whitelist);
 		weka.prepare(cmd.getTrainingSetName(), cmd.getClassifierName());
 	}

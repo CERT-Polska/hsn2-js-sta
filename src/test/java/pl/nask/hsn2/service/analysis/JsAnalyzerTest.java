@@ -20,8 +20,8 @@ import org.testng.annotations.Test;
 import pl.nask.hsn2.protobuff.Resources.JSContextResults;
 import pl.nask.hsn2.protobuff.Resources.JSContextResults.JSClass;
 
-public class JsAnalyzerTests {
-	private static final Logger LOGGER = LoggerFactory.getLogger(JsAnalyzerTests.class);
+public class JsAnalyzerTest {
+	private static final Logger LOGGER = LoggerFactory.getLogger(JsAnalyzerTest.class);
 	private Set<String> whitelist;
 	private String[] jsSourcesWhitelistTrue = { "alert(1+'-');", " alert ( \"1\" ) ; ", " alert \n\t\n\t  ('1');", "\nalert(1)\t;\n" };
 	private String[] jsSourcesWhitelistFalse = { "alert(2);", "alertThis(\"1\");", "alert\n\t\n\t(1+2);", "\nalert('a');alert(1)\t;\n" };

@@ -4,6 +4,7 @@
   <artifactId>hsn2-js-analyzer</artifactId>
   <name>HSN2 JavaScript Analyzer</name>
   <version>2.0.0-SNAPSHOT</version>
+
   <dependencies>
     <dependency>
       <groupId>pl.nask.hsn2</groupId>
@@ -11,17 +12,15 @@
       <version>2.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
-            <groupId>com.googlecode.jmockit</groupId>
-            <artifactId>jmockit</artifactId>
-            <version>0.999.15</version>
-            <scope>test</scope>
-    </dependency>
+		<groupId>org.testng</groupId>
+		<artifactId>testng</artifactId>
+		<version>6.8</version>
+	</dependency>
     <dependency>
-    	<groupId>org.testng</groupId>
-    	<artifactId>testng</artifactId>
-    	<version>6.1.1</version>
-    	<scope>test</scope>
-    </dependency>
+    	<groupId>com.googlecode.jmockit</groupId>
+    	<artifactId>jmockit</artifactId>
+    	<version>1.0</version>
+	</dependency>
     <dependency>
     	<groupId>nz.ac.waikato.cms.weka</groupId>
     	<artifactId>weka-stable</artifactId>

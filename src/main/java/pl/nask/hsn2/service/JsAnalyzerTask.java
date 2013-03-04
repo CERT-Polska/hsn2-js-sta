@@ -49,7 +49,6 @@ import pl.nask.hsn2.wrappers.ObjectDataWrapper;
 import pl.nask.hsn2.wrappers.ParametersWrapper;
 
 public class JsAnalyzerTask implements Task {
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(JsAnalyzerTask.class);
 	private final TaskContext jobContext;
 	private String[] maliciousKeywords = { "Shell.Application", "ADODB.Stream", "WScript.Shell", ".exe", ".bat", "ms06", "ms07", "ms08",
@@ -60,9 +59,9 @@ public class JsAnalyzerTask implements Task {
 	private Long jsContextId;
 	private JSWekaAnalyzer weka;
 	private Set<String> whitelist;
+	private static final int MD5_STRING_LENGTH = 32;
 
-	public JsAnalyzerTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper inputData, JsCommandLineParams cmd)
-			throws IllegalStateException {
+	public JsAnalyzerTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper inputData, JsCommandLineParams cmd) {
 		this.jobContext = jobContext;
 		jsContextId = inputData.getReferenceId("js_context_list");
 		setParameters(parameters);
@@ -82,12 +81,11 @@ public class JsAnalyzerTask implements Task {
 			while ((readLine = br.readLine()) != null) {
 				readLine = readLine.trim();
 				// MD5 hash hex string is always 32 characters length.
-				if (readLine.length() == 32) {
+				if (readLine.length() == MD5_STRING_LENGTH) {
 					whitelist.add(readLine);
 				}
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
 			LOGGER.warn("Cannot access whitelist file.");
 			LOGGER.debug(e.getMessage(), e);
 		} finally {

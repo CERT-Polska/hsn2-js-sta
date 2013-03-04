@@ -7,11 +7,12 @@ public class CircularStringBuffer {
 	private StringBuilder buffer;
 
 	public CircularStringBuffer(int size) {
+		int sizeSafe = size;
 		if (size < 1) {
-			size = 1;
+			sizeSafe = 1;
 		}
-		buffer = new StringBuilder(size);
-		for (int i = 0; i < size; i++) {
+		buffer = new StringBuilder(sizeSafe);
+		for (int i = 0; i < sizeSafe; i++) {
 			buffer.append(' ');
 		}
 	}

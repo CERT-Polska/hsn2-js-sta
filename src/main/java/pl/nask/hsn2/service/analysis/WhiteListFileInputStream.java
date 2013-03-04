@@ -34,10 +34,44 @@ public class WhiteListFileInputStream extends InputStream {
 	 * @return True if character has been accepted and should be present in trimmed string, otherwise false.
 	 */
 	private boolean isCharAccepted(char ch) {
-		if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z')) {
-			return true;
-		} else {
-			return false;
-		}
+		return isDigit(ch) || isLowerCase(ch) || isUpperCase(ch);
+	}
+
+	/**
+	 * Checks if given character is digit.
+	 * 
+	 * @param ch
+	 *            Character to check.
+	 * @return True if it's digit. False otherwise.
+	 */
+	private boolean isDigit(char ch) {
+		return ch >= '0' && ch <= '9';
+	}
+
+	/**
+	 * Checks if given character is upper case letter [A-Z].
+	 * 
+	 * @param ch
+	 *            Character to check.
+	 * @return True if it's upper case letter. False otherwise.
+	 */
+	private boolean isUpperCase(char ch) {
+		return ch >= 'A' && ch <= 'Z';
+	}
+
+	/**
+	 * Checks if given character is lower case letter [a-z].
+	 * 
+	 * @param ch
+	 *            Character to check.
+	 * @return True if it's lower case letter. False otherwise.
+	 */
+	private boolean isLowerCase(char ch) {
+		return ch >= 'a' && ch <= 'z';
+	}
+	
+	@Override
+	public void close() throws IOException {
+		is.close();
 	}
 }

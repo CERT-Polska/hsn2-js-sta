@@ -30,11 +30,10 @@ import pl.nask.hsn2.GenericService;
 import pl.nask.hsn2.service.analysis.NGramsCalc;
 
 public final class JsAnalyzerService implements Daemon {
-
 	private Thread serviceRunner;
 	private JsCommandLineParams cmd;
 
-	public static void main(String[] args) throws DaemonInitException, Exception {
+	public static void main(String[] args) throws DaemonInitException, InterruptedException {
 		JsAnalyzerService jss = new JsAnalyzerService();
 		jss.init(new JsvcArgsWrapper(args));
 		jss.start();
@@ -51,60 +50,59 @@ public final class JsAnalyzerService implements Daemon {
 	}
 
 	@Override
-	public void init(DaemonContext context) throws DaemonInitException, Exception {
+	public void init(DaemonContext context) throws DaemonInitException {
 		cmd = parseArguments(context.getArguments());
 
 		NGramsCalc.initialize(cmd.getLibPath());
-		
+
 	}
 
 	@Override
-	public void start() throws Exception {
-		final GenericService service = new GenericService(new JsAnalyzerTaskFactory(cmd), cmd.getMaxThreads(), cmd.getRbtCommonExchangeName(), cmd.getRbtNotifyExchangeName());
-        cmd.applyArguments(service);
-        serviceRunner = new Thread (new Runnable() {
-			
+	public void start() {
+		final GenericService service = new GenericService(new JsAnalyzerTaskFactory(cmd), cmd.getMaxThreads(),
+				cmd.getRbtCommonExchangeName(), cmd.getRbtNotifyExchangeName());
+		cmd.applyArguments(service);
+		serviceRunner = new Thread(new Runnable() {
+
 			@Override
 			public void run() {
-				 try {
-					 Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-						
+				try {
+					Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
 						@Override
 						public void uncaughtException(Thread t, Throwable e) {
 							System.exit(1);
-							
+
 						}
 					});
 					service.run();
 				} catch (InterruptedException e) {
 					System.exit(0);
 				}
-				
+
 			}
-		},"Js-Sta-service");
-        serviceRunner.start();
-        
-		
+		}, "Js-Sta-service");
+		serviceRunner.start();
+
 	}
 
 	@Override
-	public void stop() throws Exception {
+	public void stop() throws InterruptedException {
 		serviceRunner.interrupt();
 		serviceRunner.join();
-		
+
 	}
 
 	@Override
 	public void destroy() {
-		
+
 	}
-	
-	
-	private static class JsvcArgsWrapper implements DaemonContext{
+
+	private static final class JsvcArgsWrapper implements DaemonContext {
 		private String[] args;
 
-		private JsvcArgsWrapper(String [] a) {
-			this.args = a;
+		private JsvcArgsWrapper(String[] a) {
+			this.args = a.clone();
 		}
 
 		@Override

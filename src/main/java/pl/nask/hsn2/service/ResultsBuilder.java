@@ -27,19 +27,19 @@ import pl.nask.hsn2.protobuff.Resources.JSContextResults.JSClass;
 import pl.nask.hsn2.protobuff.Resources.JSStaticResults;
 
 public class ResultsBuilder {
-
+	private static final int MALICIOUS_ID = 3;
 	private List<JSContextResults> resultsList = new ArrayList<JSContextResults>();
 	private boolean maliciousKeywords = false;
 	private boolean suspiciousKeywords = false;
 	private JSClass classification = JSClass.UNCLASSIFIED;
 
-	public void addResults(JSContextResults contextResults){
+	public void addResults(JSContextResults contextResults) {
 		resultsList.add(contextResults);
 		setKeywordsFlag(contextResults);
 		updateClassification(contextResults);
 	}
 
-	private void setKeywordsFlag(JSContextResults contextResults){
+	private void setKeywordsFlag(JSContextResults contextResults) {
 		maliciousKeywords = maliciousKeywords || contextResults.getMaliciousKeywordsCount() > 0;
 		suspiciousKeywords = suspiciousKeywords || contextResults.getSuspiciousKeywordsCount() > 0;
 	}
@@ -48,23 +48,27 @@ public class ResultsBuilder {
 		JSClass newClassification = contextResults.getClassification();
 		boolean isWhitelisted = contextResults.getWhitelisted();
 		if (!isWhitelisted && order(classification) < order(newClassification)) {
-		    classification = newClassification;
+			classification = newClassification;
 		}
 	}
 
 	private int order(JSClass jsclass) {
 		// unclassified < benign < obfuscated < malicious
-        switch (jsclass) {
-        case UNCLASSIFIED: return 0;
-        case BENIGN: return 1;
-        case OBFUSCATED: return 2;
-        case MALICIOUS: return 3;
-        default:
-            throw new IllegalArgumentException("Unknown JSClass: " + jsclass);
-        }
-    }
+		switch (jsclass) {
+		case UNCLASSIFIED:
+			return 0;
+		case BENIGN:
+			return 1;
+		case OBFUSCATED:
+			return 2;
+		case MALICIOUS:
+			return MALICIOUS_ID;
+		default:
+			throw new IllegalArgumentException("Unknown JSClass: " + jsclass);
+		}
+	}
 
-    public JSStaticResults getJSStaticResults(){
+	public JSStaticResults getJSStaticResults() {
 		return JSStaticResults.newBuilder().addAllResults(resultsList).build();
 	}
 

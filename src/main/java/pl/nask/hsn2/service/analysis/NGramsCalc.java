@@ -21,7 +21,7 @@ package pl.nask.hsn2.service.analysis;
 
 import java.io.File;
 
-public class NGramsCalc {
+public final class NGramsCalc {
     private static volatile NGramsCalc ngrams = null;
     private native String calcNgrams(String inFilename, String buffer, int length, int limit);
 
@@ -32,6 +32,9 @@ public class NGramsCalc {
         }
     }
 
+    /**
+     * Utility class, should not be instantiated.
+     */
     private NGramsCalc() {
     }
 

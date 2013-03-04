@@ -27,13 +27,15 @@ import org.slf4j.LoggerFactory;
 import pl.nask.hsn2.CommandLineParams;
 
 public class JsCommandLineParams extends CommandLineParams {
-    private final static OptionNameWrapper TRAINING_SET = new OptionNameWrapper("ts", "trainingSet");
-    private final static OptionNameWrapper CLASSIFIER_NAME = new OptionNameWrapper("cn", "classifierName");
-    private final static OptionNameWrapper NGRAM_LENGHT = new OptionNameWrapper("nl", "ngramLength");
-    private final static OptionNameWrapper NGRAM_QUANTITY = new OptionNameWrapper("nq", "ngramQuantity");
-    private final static OptionNameWrapper LIB_PATH = new OptionNameWrapper("lib", "libPath");
-    private final static OptionNameWrapper WHITELIST_PATH = new OptionNameWrapper("wp", "whitelistPath");
-    private final static Logger LOGGER = LoggerFactory.getLogger(JsCommandLineParams.class);
+	private static final OptionNameWrapper TRAINING_SET = new OptionNameWrapper("ts", "trainingSet");
+    private static final OptionNameWrapper CLASSIFIER_NAME = new OptionNameWrapper("cn", "classifierName");
+    private static final OptionNameWrapper NGRAM_LENGHT = new OptionNameWrapper("nl", "ngramLength");
+    private static final OptionNameWrapper NGRAM_QUANTITY = new OptionNameWrapper("nq", "ngramQuantity");
+    private static final OptionNameWrapper LIB_PATH = new OptionNameWrapper("lib", "libPath");
+    private static final OptionNameWrapper WHITELIST_PATH = new OptionNameWrapper("wp", "whitelistPath");
+    private static final Logger LOGGER = LoggerFactory.getLogger(JsCommandLineParams.class);
+    private static final int NGRAM_QUANTITY_DEFAULT = 50;
+    private static final int NGRAM_LENGTH_DEFAULT = 4;
 
 	@Override
     public void initOptions() {
@@ -72,8 +74,8 @@ public class JsCommandLineParams extends CommandLineParams {
 	    setDefaultValue(TRAINING_SET, "out4.arff");
 	    setDefaultValue(WHITELIST_PATH, "whitelist");
 	    setDefaultValue(CLASSIFIER_NAME, "weka.classifiers.bayes.NaiveBayes");
-	    setDefaultIntValue(NGRAM_LENGHT, 4);
-	    setDefaultIntValue(NGRAM_QUANTITY, 50);
+	    setDefaultIntValue(NGRAM_LENGHT, NGRAM_LENGTH_DEFAULT);
+	    setDefaultIntValue(NGRAM_QUANTITY, NGRAM_QUANTITY_DEFAULT);
 	    setDefaultMaxThreads(1);
 	    setDefaultServiceNameAndQueueName("js-sta");
 	    setDefaultDataStoreAddress("http://127.0.0.1:8080");

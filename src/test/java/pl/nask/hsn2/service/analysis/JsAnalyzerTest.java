@@ -1,9 +1,10 @@
 package pl.nask.hsn2.service.analysis;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,18 +28,17 @@ public class JsAnalyzerTest {
 	private String[] jsSourcesWhitelistFalse = { "alert(2);", "alertThis(\"1\");", "alert\n\t\n\t(1+2);", "\nalert('a');alert(1)\t;\n" };
 
 	// For malicious/suspicious tests
-	private static final String testJsSource = "Shell.Application ADODB.Stream WScript.Shell .exe .bat ms06 ms07 ms08 ms09 "
+	private static final String JS_SOURCE_LONG = "Shell.Application ADODB.Stream WScript.Shell .exe .bat ms06 ms07 ms08 ms09 "
 			+ "shellcode block heap spray exploit overflow savetofile .Exe .eXe .exE .EXe .eXE .ExE .EXE .Bat .bAt .baT .BAt "
 			+ ".bAT .BaT top.location document.location window.location document.write document.writeln eval location.replace "
 			+ "location.reload location.href document.body.innerhtml myTestMaliciousWordmyTestSuspiciousWord";
-	private static final String[] maliciousKeywords = { "Shell.Application", "ADODB.Stream", "WScript.Shell", ".exe", ".bat", "ms06",
+	private static final String JS_SOURCE_SHORT = ".exeeval";
+	private static final String[] MALICIOUS_KEYWORDS = { "Shell.Application", "ADODB.Stream", "WScript.Shell", ".exe", ".bat", "ms06",
 			"ms07", "ms08", "ms09", "shellcode", "block", "heap", "spray", "exploit", "overflow", "savetofile", ".Exe", ".eXe", ".exE",
 			".EXe", ".eXE", ".ExE", ".EXE", ".Bat", ".bAt", ".baT", ".BAt", ".bAT", ".BaT", "myTestMaliciousWord" };
-	private static final String[] suspiciousKeywords = { "top.location", "document.location", "window.location", "document.write",
+	private static final String[] SUSPICIOUS_KEYWORDS = { "top.location", "document.location", "window.location", "document.write",
 			"document.writeln", "eval", "location.replace", "location.reload", "location.href", "document.body.innerhtml",
 			"myTestSuspiciousWord" };
-
-	private int counter = 0;
 
 	@BeforeClass
 	private void testInit() {
@@ -66,7 +66,7 @@ public class JsAnalyzerTest {
 
 		for (int i = 0; i < jsSourcesWhitelistTrue.length; i++) {
 			// Prepare temp file.
-			File f = new File(prepareTempJsSource(jsSourcesWhitelistTrue[i]));
+			File f = IoTestsUtils.prepareTempFile(jsSourcesWhitelistTrue[i], JsAnalyzerTest.class.getSimpleName());
 
 			JSContextResults result = analyzer.process(i, f);
 			boolean isWhitelisted = result.getWhitelisted();
@@ -75,8 +75,10 @@ public class JsAnalyzerTest {
 			Assert.assertTrue(isWhitelisted, "Should be whitelisted");
 
 			// Delete temp file.
-			if (!f.delete()) {
-				LOGGER.warn("Could not delete temp file: {}", f);
+			try {
+				Files.delete(f.toPath());
+			} catch (IOException e) {
+				LOGGER.warn("Could not delete temp file. (file={}, reason={})", f.getAbsolutePath(), e.getMessage());
 			}
 		}
 	}
@@ -90,7 +92,7 @@ public class JsAnalyzerTest {
 
 		for (int i = 0; i < jsSourcesWhitelistFalse.length; i++) {
 			// Prepare temp file.
-			File f = new File(prepareTempJsSource(jsSourcesWhitelistFalse[i]));
+			File f = IoTestsUtils.prepareTempFile(jsSourcesWhitelistFalse[i], JsAnalyzerTest.class.getSimpleName());
 
 			JSContextResults result = analyzer.process(i, f);
 			boolean isWhitelisted = result.getWhitelisted();
@@ -99,59 +101,85 @@ public class JsAnalyzerTest {
 			Assert.assertFalse(isWhitelisted, "Should not be whitelisted");
 
 			// Delete temp file.
-			if (!f.delete()) {
-				LOGGER.warn("Could not delete temp file: {}", f);
+			try {
+				Files.delete(f.toPath());
+			} catch (IOException e) {
+				LOGGER.warn("Could not delete temp file. (file={}, reason={})", f.getAbsolutePath(), e.getMessage());
 			}
 		}
 	}
 
+	@Test()
+	public void whitelistMd5ExceptionCheck() throws Exception {
+		mockObjects();
+		new NonStrictExpectations() {
+			@Mocked
+			MessageDigest md;
+			{
+				MessageDigest.getInstance("MD5");
+				result = new NoSuchAlgorithmException();
+			}
+		};
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
+		File f = IoTestsUtils.prepareTempFile(jsSourcesWhitelistTrue[0], JsAnalyzerTest.class.getSimpleName());
+		JSContextResults result = analyzer.process(0, f);
+		Assert.assertFalse(result.getWhitelisted(), "Should not be whitelisted.");
+	}
+
 	@Test
-	public void maliciousSuspiciousCheck() throws Exception {
+	public void maliciousSuspiciousLongCheck() throws Exception {
 		mockObjects();
 
 		// create analyzer
-		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(maliciousKeywords, suspiciousKeywords, 0, 0, whitelist);
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(MALICIOUS_KEYWORDS, SUSPICIOUS_KEYWORDS, 0, 0, whitelist);
 
 		// Prepare temp file.
-		File f = new File(prepareTempJsSource(testJsSource));
+		File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG, JsAnalyzerTest.class.getSimpleName());
 		JSContextResults result = analyzer.process(1, f);
 
 		List<String> words = result.getMaliciousKeywordsList();
-		for (String word : maliciousKeywords) {
+		for (String word : MALICIOUS_KEYWORDS) {
 			Assert.assertTrue(words.contains(word), "Malicious word [" + word + "] not found in malicious list.");
 			LOGGER.info("Found malicious word: {}", word);
 		}
 		words = result.getSuspiciousKeywordsList();
-		for (String word : suspiciousKeywords) {
+		for (String word : SUSPICIOUS_KEYWORDS) {
 			Assert.assertTrue(words.contains(word), "Suspicious word [" + word + "] not found in malicious list.");
 			LOGGER.info("Found suspicious word: {}", word);
 		}
 
 		// Delete temp file.
-		if (!f.delete()) {
-			LOGGER.warn("Could not delete temp file: {}", f);
+		try {
+			Files.delete(f.toPath());
+		} catch (IOException e) {
+			LOGGER.warn("Could not delete temp file. (file={}, reason={})", f.getAbsolutePath(), e.getMessage());
 		}
 	}
 
-	private String prepareTempJsSource(String source) throws IOException {
-		// Create unique path to file.
-		File f = new File(System.getProperty("java.io.tmpdir"));
-		String tempFileName = f.getAbsolutePath() + File.separator + "hsn2-js-sta_" + counter + System.currentTimeMillis();
-		while (true) {
-			f = new File(tempFileName);
-			if (!f.exists()) {
-				break;
-			}
-			tempFileName += "-";
+	@Test
+	public void maliciousSuspiciousShortCheck() throws Exception {
+		mockObjects();
+
+		// create analyzer
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(MALICIOUS_KEYWORDS, SUSPICIOUS_KEYWORDS, 0, 0, whitelist);
+
+		// Prepare temp file.
+		File f = IoTestsUtils.prepareTempFile(JS_SOURCE_SHORT, JsAnalyzerTest.class.getSimpleName());
+		JSContextResults result = analyzer.process(1, f);
+
+		List<String> words = result.getMaliciousKeywordsList();
+		Assert.assertEquals(words.size(), 1);
+		Assert.assertTrue(words.contains(".exe"));
+
+		words = result.getSuspiciousKeywordsList();
+		Assert.assertEquals(words.size(), 1);
+		Assert.assertTrue(words.contains("eval"));
+
+		// Delete temp file.
+		try {
+			Files.delete(f.toPath());
+		} catch (IOException e) {
+			LOGGER.warn("Could not delete temp file. (file={}, reason={})", f.getAbsolutePath(), e.getMessage());
 		}
-
-		// Write source to file.
-		BufferedWriter bw = new BufferedWriter(new FileWriter(f));
-		bw.write(source);
-		bw.close();
-
-		// Return path file.
-		LOGGER.info("Temp file created: {}", tempFileName);
-		return tempFileName;
 	}
 }

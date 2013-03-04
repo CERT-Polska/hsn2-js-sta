@@ -62,8 +62,8 @@ public class JSWekaAnalyzer {
 		this.ngramsLength = ngramsLength;
 		this.ngramsQuantity = ngramsQuantity;
 		this.whitelist = whitelist;
-		this.maliciousWords = maliciousKeywords;
-		this.suspiciousWords = suspiciousKeywords;
+		this.maliciousWords = maliciousKeywords.clone();
+		this.suspiciousWords = suspiciousKeywords.clone();
 	}
 
 	public JSContextResults process(int id, File jsSrcFile) throws IOException {
@@ -217,24 +217,24 @@ public class JSWekaAnalyzer {
 	private void createTrainingSet(String arffFileName, String classifierName) {
 		try {
 			ConverterUtils.DataSource source = new ConverterUtils.DataSource(arffFileName);
-			Instances trainingSet = source.getDataSet();
-			if (trainingSet.classIndex() == -1) {
-				trainingSet.setClassIndex(trainingSet.numAttributes() - 1);
+			Instances trainingSetTemp = source.getDataSet();
+			if (trainingSetTemp.classIndex() == -1) {
+				trainingSetTemp.setClassIndex(trainingSetTemp.numAttributes() - 1);
 			}
 			Classifier naiveBayes = (Classifier) Class.forName(classifierName).newInstance();
-			FilteredClassifier fc = new FilteredClassifier();
-			fc.setClassifier(naiveBayes);
-			fc.setFilter(new StringToWordVector());
-			fc.buildClassifier(trainingSet);
-			JSWekaAnalyzer.trainingSet = trainingSet;
-			JSWekaAnalyzer.fc = fc;
+			FilteredClassifier filteredClassifier = new FilteredClassifier();
+			filteredClassifier.setClassifier(naiveBayes);
+			filteredClassifier.setFilter(new StringToWordVector());
+			filteredClassifier.buildClassifier(trainingSetTemp);
+			JSWekaAnalyzer.trainingSet = trainingSetTemp;
+			JSWekaAnalyzer.fc = filteredClassifier;
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage(), e);
 			JSWekaAnalyzer.fc = null;
 		}
 	}
 
-	public void prepare(String arffFileName, String classifierName) throws IllegalStateException {
+	public void prepare(String arffFileName, String classifierName) {
 		if (trainingSet == null) {
 			createTrainingSet(arffFileName, classifierName);
 		}

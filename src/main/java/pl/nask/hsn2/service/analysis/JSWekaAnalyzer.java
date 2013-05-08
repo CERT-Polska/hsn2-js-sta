@@ -76,7 +76,8 @@ public class JSWekaAnalyzer {
 
 			// Calculate MD5 hash.
 			String md5hash = md5hashFromFile(bis);
-
+			resultsBuilder.setHash(md5hash);
+			
 			// Check is script is whitelisted.
 			boolean isWhitelisted = whitelist.contains(md5hash);
 			resultsBuilder.setWhitelisted(isWhitelisted);

@@ -26,7 +26,8 @@ public class JsAnalyzerTest {
 	private Set<String> whitelist;
 	private String[] jsSourcesWhitelistTrue = { "alert(1+'-');", " alert ( \"1\" ) ; ", " alert \n\t\n\t  ('1');", "\nalert(1)\t;\n" };
 	private String[] jsSourcesWhitelistFalse = { "alert(2);", "alertThis(\"1\");", "alert\n\t\n\t(1+2);", "\nalert('a');alert(1)\t;\n" };
-
+	private final static String ALERT1_HASH = "f3312b1a03e36409470c404bd2f81e6f";
+	
 	// For malicious/suspicious tests
 	private static final String JS_SOURCE_LONG = "Shell.Application ADODB.Stream WScript.Shell .exe .bat ms06 ms07 ms08 ms09 "
 			+ "shellcode block heap spray exploit overflow savetofile .Exe .eXe .exE .EXe .eXE .ExE .EXE .Bat .bAt .baT .BAt "
@@ -43,7 +44,7 @@ public class JsAnalyzerTest {
 	@BeforeClass
 	private void testInit() {
 		whitelist = new HashSet<String>();
-		whitelist.add("f3312b1a03e36409470c404bd2f81e6f");
+		whitelist.add(ALERT1_HASH);
 	}
 
 	private void mockObjects() {
@@ -73,13 +74,18 @@ public class JsAnalyzerTest {
 			LOGGER.info("Source[{}] whitelisted? {}", i, isWhitelisted);
 			LOGGER.info("Source[{}]:\n{}", i, jsSourcesWhitelistTrue[i]);
 			Assert.assertTrue(isWhitelisted, "Should be whitelisted");
+			
+			Assert.assertEquals(result.getHash(), ALERT1_HASH);
 
-			// Delete temp file.
-			try {
-				Files.delete(f.toPath());
-			} catch (IOException e) {
-				LOGGER.warn("Could not delete temp file. (file={}, reason={})", f.getAbsolutePath(), e.getMessage());
-			}
+			deleteTempFile(f);
+		}
+	}
+	
+	private void deleteTempFile(File f){
+		try {
+			Files.delete(f.toPath());
+		} catch (IOException e) {
+			LOGGER.warn("Could not delete temp file. (file={}, reason={})", f.getAbsolutePath(), e.getMessage());
 		}
 	}
 
@@ -99,13 +105,8 @@ public class JsAnalyzerTest {
 			LOGGER.info("Source[{}] whitelisted? {}", i, isWhitelisted);
 			LOGGER.info("Source[{}]:\n{}", i, jsSourcesWhitelistFalse[i]);
 			Assert.assertFalse(isWhitelisted, "Should not be whitelisted");
-
-			// Delete temp file.
-			try {
-				Files.delete(f.toPath());
-			} catch (IOException e) {
-				LOGGER.warn("Could not delete temp file. (file={}, reason={})", f.getAbsolutePath(), e.getMessage());
-			}
+			
+			deleteTempFile(f);
 		}
 	}
 
@@ -148,12 +149,7 @@ public class JsAnalyzerTest {
 			LOGGER.info("Found suspicious word: {}", word);
 		}
 
-		// Delete temp file.
-		try {
-			Files.delete(f.toPath());
-		} catch (IOException e) {
-			LOGGER.warn("Could not delete temp file. (file={}, reason={})", f.getAbsolutePath(), e.getMessage());
-		}
+		deleteTempFile(f);
 	}
 
 	@Test
@@ -175,11 +171,6 @@ public class JsAnalyzerTest {
 		Assert.assertEquals(words.size(), 1);
 		Assert.assertTrue(words.contains("eval"));
 
-		// Delete temp file.
-		try {
-			Files.delete(f.toPath());
-		} catch (IOException e) {
-			LOGGER.warn("Could not delete temp file. (file={}, reason={})", f.getAbsolutePath(), e.getMessage());
-		}
+		deleteTempFile(f);
 	}
 }

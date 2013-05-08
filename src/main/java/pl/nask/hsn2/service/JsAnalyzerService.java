@@ -19,100 +19,49 @@
 
 package pl.nask.hsn2.service;
 
-import java.lang.Thread.UncaughtExceptionHandler;
-
-import org.apache.commons.daemon.Daemon;
 import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonController;
 import org.apache.commons.daemon.DaemonInitException;
 
-import pl.nask.hsn2.GenericService;
+import pl.nask.hsn2.CommandLineParams;
+import pl.nask.hsn2.ServiceMain;
 import pl.nask.hsn2.service.analysis.NGramsCalc;
+import pl.nask.hsn2.task.TaskFactory;
 
-public final class JsAnalyzerService implements Daemon {
-	private Thread serviceRunner;
-	private JsCommandLineParams cmd;
-
-	public static void main(String[] args) throws DaemonInitException, InterruptedException {
-		JsAnalyzerService jss = new JsAnalyzerService();
-		jss.init(new JsvcArgsWrapper(args));
-		jss.start();
-		jss.serviceRunner.join();
-		jss.stop();
-		jss.destroy();
-	}
-
-	private static JsCommandLineParams parseArguments(String[] args) {
-		JsCommandLineParams params = new JsCommandLineParams();
-		params.parseParams(args);
-
-		return params;
-	}
-
-	@Override
-	public void init(DaemonContext context) throws DaemonInitException {
-		cmd = parseArguments(context.getArguments());
-
-		NGramsCalc.initialize(cmd.getLibPath());
-
-	}
-
-	@Override
-	public void start() {
-		final GenericService service = new GenericService(new JsAnalyzerTaskFactory(cmd), cmd.getMaxThreads(),
-				cmd.getRbtCommonExchangeName(), cmd.getRbtNotifyExchangeName());
-		cmd.applyArguments(service);
-		serviceRunner = new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-
-						@Override
-						public void uncaughtException(Thread t, Throwable e) {
-							System.exit(1);
-
-						}
-					});
-					service.run();
-				} catch (InterruptedException e) {
-					System.exit(0);
-				}
-
+public final class JsAnalyzerService extends ServiceMain {	
+	
+	protected JsCommandLineParams cmd = new JsCommandLineParams();
+	
+	public static void main(final String[] args) throws DaemonInitException, InterruptedException {
+		ServiceMain jss = new JsAnalyzerService();
+		jss.init(new DaemonContext() {
+			public DaemonController getController() {
+				return null;
 			}
-		}, "Js-Sta-service");
-		serviceRunner.start();
-
+			public String[] getArguments() {
+				return args;
+			}
+		});
+		jss.start();
 	}
 
 	@Override
-	public void stop() throws InterruptedException {
-		serviceRunner.interrupt();
-		serviceRunner.join();
-
+	protected CommandLineParams parseArguments(String[] args) {
+		 
+		cmd.parseParams(args);
+		return cmd;
+	}
+	
+	
+	
+	@Override
+	protected void prepareService() {
+		NGramsCalc.initialize(cmd.getLibPath());
 	}
 
 	@Override
-	public void destroy() {
-
+	protected TaskFactory createTaskFactory(){
+		return new JsAnalyzerTaskFactory(cmd);
 	}
 
-	private static final class JsvcArgsWrapper implements DaemonContext {
-		private String[] args;
-
-		private JsvcArgsWrapper(String[] a) {
-			this.args = a.clone();
-		}
-
-		@Override
-		public DaemonController getController() {
-			return null;
-		}
-
-		@Override
-		public String[] getArguments() {
-			return args;
-		}
-	}
 }

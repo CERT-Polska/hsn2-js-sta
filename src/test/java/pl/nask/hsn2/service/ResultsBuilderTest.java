@@ -12,6 +12,8 @@ import pl.nask.hsn2.protobuff.Resources.JSContextResults.JSClass;
 import pl.nask.hsn2.protobuff.Resources.JSStaticResults;
 
 public class ResultsBuilderTest {
+	private static final String TEST_HASH = "098f6bcd4621d373cade4e832627b4f6";
+
 	@Test
 	public void buildTest() throws Exception {
 		ResultsBuilder rb = new ResultsBuilder();
@@ -27,12 +29,25 @@ public class ResultsBuilderTest {
 		wordsListSus.add("word21");
 		wordsListSus.add("word31");
 		contextResultsBuilder.addAllSuspiciousKeywords(wordsListSus);
+		contextResultsBuilder.setHash(TEST_HASH);
 		rb.addResults(contextResultsBuilder.build());
-		contextResultsBuilder = JSContextResults.newBuilder().setId(2).setClassification(JSClass.BENIGN).setWhitelisted(false);
+		contextResultsBuilder = JSContextResults.newBuilder()
+				.setId(2)
+				.setClassification(JSClass.BENIGN)
+				.setWhitelisted(false)
+				.setHash(TEST_HASH);;
 		rb.addResults(contextResultsBuilder.build());
-		contextResultsBuilder = JSContextResults.newBuilder().setId(3).setClassification(JSClass.OBFUSCATED).setWhitelisted(false);
+		contextResultsBuilder = JSContextResults.newBuilder()
+				.setId(3)
+				.setClassification(JSClass.OBFUSCATED)
+				.setWhitelisted(false)
+				.setHash(TEST_HASH);
 		rb.addResults(contextResultsBuilder.build());
-		contextResultsBuilder = JSContextResults.newBuilder().setId(4).setClassification(JSClass.MALICIOUS).setWhitelisted(false);
+		contextResultsBuilder = JSContextResults.newBuilder()
+				.setId(4)
+				.setClassification(JSClass.MALICIOUS)
+				.setWhitelisted(false)
+				.setHash(TEST_HASH);
 		rb.addResults(contextResultsBuilder.build());
 
 		Assert.assertEquals(rb.getClassification(), JSClass.MALICIOUS);

@@ -30,7 +30,6 @@ import pl.nask.hsn2.task.TaskFactory;
 
 public final class JsAnalyzerService extends ServiceMain {	
 	
-	protected JsCommandLineParams cmd = new JsCommandLineParams();
 	
 	public static void main(final String[] args) throws DaemonInitException, InterruptedException {
 		ServiceMain jss = new JsAnalyzerService();
@@ -44,24 +43,19 @@ public final class JsAnalyzerService extends ServiceMain {
 		});
 		jss.start();
 	}
-
-	@Override
-	protected CommandLineParams parseArguments(String[] args) {
-		 
-		cmd.parseParams(args);
-		return cmd;
-	}
-	
-	
 	
 	@Override
 	protected void prepareService() {
-		NGramsCalc.initialize(cmd.getLibPath());
+		NGramsCalc.initialize(((JsCommandLineParams)getCommandLineParams()).getLibPath());
 	}
 
 	@Override
 	protected TaskFactory createTaskFactory(){
-		return new JsAnalyzerTaskFactory(cmd);
+		return new JsAnalyzerTaskFactory((JsCommandLineParams)getCommandLineParams());
 	}
 
+	@Override
+	protected CommandLineParams newCommandLineParams() {
+		return new JsCommandLineParams();
+	}
 }

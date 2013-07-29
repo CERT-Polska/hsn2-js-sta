@@ -81,9 +81,9 @@ public class JsAnalyzerTask implements Task {
 			while ((readLine = br.readLine()) != null) {
 				readLine = readLine.trim();
 				// MD5 hash hex string is always 32 characters length.
-				if (readLine.length() == MD5_STRING_LENGTH) {
+//				if (readLine.length() == MD5_STRING_LENGTH) {
 					whitelist.add(readLine);
-				}
+//				}
 			}
 		} catch (IOException e) {
 			LOGGER.warn("Cannot access whitelist file.");

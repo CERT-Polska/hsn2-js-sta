@@ -42,11 +42,13 @@ public final class JsAnalyzerService extends ServiceMain {
 			}
 		});
 		jss.start();
+		jss.getServiceRunner().join();
 	}
 	
 	@Override
 	protected void prepareService() {
-		NGramsCalc.initialize(((JsCommandLineParams)getCommandLineParams()).getLibPath());
+		JsCommandLineParams jscmd = (JsCommandLineParams) getCommandLineParams();
+		NGramsCalc.initialize(jscmd.getLibPath());
 	}
 
 	@Override

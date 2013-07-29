@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import pl.nask.hsn2.protobuff.Resources.JSContextResults;
+import pl.nask.hsn2.protobuff.Resources.JSContextResults.Builder;
 import pl.nask.hsn2.protobuff.Resources.JSContextResults.JSClass;
 import weka.classifiers.Classifier;
 import weka.classifiers.meta.FilteredClassifier;
@@ -56,6 +57,9 @@ public class JSWekaAnalyzer {
 	private final String[] suspiciousWords;
 	private int shortestWordSize = Integer.MAX_VALUE;
 	private int longestWordSize = Integer.MIN_VALUE;
+	private boolean md5check = false;
+	private SSDeepHashGenerator generator;
+	private int ssdeepLimit = 5;
 
 	public JSWekaAnalyzer(String[] maliciousKeywords, String[] suspiciousKeywords, int ngramsLength, int ngramsQuantity,
 			Set<String> whitelist) {
@@ -64,23 +68,25 @@ public class JSWekaAnalyzer {
 		this.whitelist = whitelist;
 		this.maliciousWords = maliciousKeywords.clone();
 		this.suspiciousWords = suspiciousKeywords.clone();
+		if(!md5check) {
+			generator = new SSDeepHashGenerator();
+		}
 	}
 
 	public JSContextResults process(int id, File jsSrcFile) throws IOException {
-		JSContextResults.Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
+		Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
 
 		// Check for malicious and suspicious keywords.
 		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile))) {
 			bis.mark(Integer.MAX_VALUE);
 			addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
 
-			// Calculate MD5 hash.
-			String md5hash = md5hashFromFile(bis);
-			resultsBuilder.setHash(md5hash);
-			
-			// Check is script is whitelisted.
-			boolean isWhitelisted = whitelist.contains(md5hash);
-			resultsBuilder.setWhitelisted(isWhitelisted);
+			if(md5check) {
+				checkMd5HashAndUpdateResults(bis, resultsBuilder);
+			}
+			else {
+				checkSsdeepHashAndUpdateResults(jsSrcFile.getAbsolutePath(), resultsBuilder);
+			}
 		}
 
 		// Run weka check.
@@ -88,6 +94,33 @@ public class JSWekaAnalyzer {
 		resultsBuilder.setClassification(jsClassify);
 
 		return resultsBuilder.build();
+	}
+	
+	private void checkMd5HashAndUpdateResults(BufferedInputStream bis, Builder resultsBuilder) throws IOException{
+		// Calculate MD5 hash.
+		long start = System.nanoTime();
+		String md5hash = md5hashFromFile(bis);
+		resultsBuilder.setHash(md5hash);
+		System.out.println("gene: " + (System.nanoTime() - start));
+		// Check is script is whitelisted.
+		boolean isWhitelisted = whitelist.contains(md5hash);
+		resultsBuilder.setWhitelisted(isWhitelisted);
+		System.out.println("comp: " + (System.nanoTime() - start));
+	}
+	
+	private void checkSsdeepHashAndUpdateResults(String absolutePath, Builder resultsBuilder) {
+		String hash = generator.generateHashForFile(absolutePath);
+		resultsBuilder.setHash(hash);
+		for(String fromList : whitelist) {
+			int score = generator.compare(fromList, hash);
+			if (score > ssdeepLimit) {
+				LOGGER.info(""+score);
+				resultsBuilder.setWhitelisted(true);
+				return;
+			}
+			//LOGGER.info(""+score);
+		}
+		resultsBuilder.setWhitelisted(false);
 	}
 
 	private void updateLongestAndShortestWordSize(String[] words) {
@@ -249,6 +282,7 @@ public class JSWekaAnalyzer {
 	 * @throws IOException
 	 */
 	public String md5hashFromFile(BufferedInputStream bufferedInputStream) throws IOException {
+		long start = System.nanoTime();
 		bufferedInputStream.reset();
 		String result = null;
 		MessageDigest md;
@@ -265,6 +299,7 @@ public class JSWekaAnalyzer {
 			LOGGER.error("Could not create MD5 hash for whitelisting.\n{}", e);
 			result = "";
 		}
+		System.out.println("gen: " + (System.nanoTime() - start));
 		return result;
 	}
 }

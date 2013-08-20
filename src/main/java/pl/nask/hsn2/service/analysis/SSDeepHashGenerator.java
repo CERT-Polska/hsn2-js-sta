@@ -73,7 +73,7 @@ public class SSDeepHashGenerator {
 //		System.out.println(s);
 //		System.out.println(s1);
 //		System.out.println(generator.compare(s, s1));
-		File f = new File("src/test/resources/2");
+		File f = new File("src/test/resources/3");
 		InputStream in = new FileInputStream(f);
 		String s = IOUtils.toString(in);
 		JSContextList jsl = JSContextList.newBuilder().addContexts(JSContext.newBuilder().setSource(s).setEval(false).setId(1)).build();

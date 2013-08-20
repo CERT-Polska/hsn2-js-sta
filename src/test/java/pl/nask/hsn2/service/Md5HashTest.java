@@ -49,6 +49,7 @@ import pl.nask.hsn2.protobuff.Object.Attribute.Type;
 import pl.nask.hsn2.protobuff.ObjectStore.ObjectResponse;
 import pl.nask.hsn2.protobuff.ObjectStore.ObjectResponse.ResponseType;
 import pl.nask.hsn2.protobuff.Process.TaskRequest;
+import pl.nask.hsn2.service.analysis.JSWekaAnalyzer;
 import pl.nask.hsn2.service.analysis.NGramsCalc;
 import pl.nask.hsn2.utils.DataStoreHelper;
 import pl.nask.hsn2.wrappers.ObjectDataWrapper;
@@ -176,7 +177,7 @@ public class Md5HashTest {
 		};
 	}
 	
-	@Test
+	//@Test
 	public void oneHundredRunsTest() throws Exception{
 		long start = System.nanoTime();
 		
@@ -192,7 +193,7 @@ public class Md5HashTest {
 	
 	
 	
-	@Test
+	//@Test
 	public void processTest() throws Exception {
 
 		new NonStrictExpectations() {
@@ -206,6 +207,9 @@ public class Md5HashTest {
 			JsCommandLineParams jsCMD;
 //			@Mocked
 //			GenericCmdParams cmd;
+			
+			@Mocked("isMd5Check")
+			JSWekaAnalyzer jsWA;
 			
 			{
 				dsh.getFileAsInputStream(null, anyLong, anyLong);
@@ -233,6 +237,9 @@ public class Md5HashTest {
 				jsCMD.getNgramQuantity();
 				result = 50;
 				
+
+				jsWA.isMd5Check();
+				result = false;
 //				jsCMD.parseParams(new String[]{});
 //				result = new Delegate() {
 //					private InputStream in;
@@ -254,14 +261,107 @@ public class Md5HashTest {
 		NGramsCalc.initialize("/home/rajdo/hsn/HSN2/trunk/software/Tools/hsn-ngrams/libngrams.so");
 		
 		long start = System.nanoTime();
-		for(int j = 0; j < 2; j++){
-			for(int i = 1; i < 3; i++) {
+		for(int j = 0; j < 10; j++){
+			for(int i = 1; i < 4; i++) {
 				Attribute.Builder attr = Attribute.newBuilder().setName("js_context_list").setType(Type.BYTES).setDataBytes(Reference.newBuilder().setKey(i).setStore(1));
 				ObjectData objectData = ObjectData.newBuilder().setId(1).addAttrs(attr).build();
 				JsAnalyzerTask analyzerTask = new JsAnalyzerTask(new TaskContext(2, 3, 4, null), new ParametersWrapper(), new ObjectDataWrapper(objectData) , new JsCommandLineParams());
+//				System.out.println("ssdeep b " + (System.nanoTime() - start));
 				analyzerTask.process();
+//				System.out.println("ssdeep a " + (System.nanoTime() - start));
 			}
 		}
-		System.out.println(System.nanoTime() - start);
+		System.out.println("ssdeep " + (System.nanoTime() - start));
+	}
+	
+	//@Test
+	public void processTest1() throws Exception {
+
+		new NonStrictExpectations() {
+			@Mocked
+			DataStoreConnectorImpl ds;
+			
+			@Mocked
+			DataStoreHelper dsh;
+			
+			@Mocked
+			JsCommandLineParams jsCMD;
+
+			
+			@Mocked("isMd5Check")
+			JSWekaAnalyzer jsWA;
+			
+			{
+				dsh.getFileAsInputStream(null, anyLong, anyLong);
+				result = new Delegate() {
+					private InputStream in;
+					public InputStream getFileAsInputStream(ServiceConnector connector, long jobId, long referenceId) throws Exception{
+						File f = new File("src/test/resources/" + referenceId);
+						in = new FileInputStream(f);
+						return in;
+					}
+				};
+				
+				jsCMD.getTrainingSetName();
+				result = "out4.arff";
+				
+				jsCMD.getWhitelistPath();
+				result = "whitelist.md5";
+				
+				jsCMD.getClassifierName();
+				result = "weka.classifiers.bayes.NaiveBayes";
+				
+				jsCMD.getNgramLength();
+				result = 4;
+				
+				jsCMD.getNgramQuantity();
+				result = 50;
+				
+				jsWA.isMd5Check();
+				result = true;
+				
+//				jsCMD.parseParams(new String[]{});
+//				result = new Delegate() {
+//					private InputStream in;
+//					public void parseParams(String[] cmd) throws Exception{
+//						jsCMD.initDefaults();
+//					}					
+//				};
+//				
+//				cmd.getOptionValue(anyString);
+//				result = new Delegate() {
+//					protected final String getOptionValue(String optionName) {
+//						return getDefaultValue(optionName);
+//					}
+//				};
+				
+			}
+			
+		};
+		NGramsCalc.initialize("/home/rajdo/hsn/HSN2/trunk/software/Tools/hsn-ngrams/libngrams.so");
+		
+		long start = System.nanoTime();
+		for(int j = 0; j < 10; j++){
+			for(int i = 1; i < 4; i++) {
+				Attribute.Builder attr = Attribute.newBuilder().setName("js_context_list").setType(Type.BYTES).setDataBytes(Reference.newBuilder().setKey(i).setStore(1));
+				ObjectData objectData = ObjectData.newBuilder().setId(1).addAttrs(attr).build();
+				JsAnalyzerTask analyzerTask = new JsAnalyzerTask(new TaskContext(2, 3, 4, null), new ParametersWrapper(), new ObjectDataWrapper(objectData) , new JsCommandLineParams());
+				//System.out.println("md5 b " + (System.nanoTime() - start));
+				analyzerTask.process();
+				//System.out.println("md5 a " + (System.nanoTime() - start));
+			}
+		}
+		System.out.println("md5 " + (System.nanoTime() - start));
+	}
+	
+	
+	
+	@Test
+	public void allTests() throws Exception{
+		for(int i = 0;i<10 ;i++){
+			processTest();
+			processTest1();
+			System.out.println();
+		}
 	}
 }

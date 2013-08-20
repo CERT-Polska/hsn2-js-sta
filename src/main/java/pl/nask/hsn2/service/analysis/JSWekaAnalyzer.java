@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -32,6 +33,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,10 +59,14 @@ public class JSWekaAnalyzer {
 	private final String[] suspiciousWords;
 	private int shortestWordSize = Integer.MAX_VALUE;
 	private int longestWordSize = Integer.MIN_VALUE;
-	private boolean md5check = false;
+	private boolean md5Check = false;
 	private SSDeepHashGenerator generator;
-	private int ssdeepLimit = 5;
+	private int ssdeepLimit = 70;
 
+	public boolean isMd5Check(){
+		return md5Check;
+	}
+	
 	public JSWekaAnalyzer(String[] maliciousKeywords, String[] suspiciousKeywords, int ngramsLength, int ngramsQuantity,
 			Set<String> whitelist) {
 		this.ngramsLength = ngramsLength;
@@ -68,7 +74,7 @@ public class JSWekaAnalyzer {
 		this.whitelist = whitelist;
 		this.maliciousWords = maliciousKeywords.clone();
 		this.suspiciousWords = suspiciousKeywords.clone();
-		if(!md5check) {
+		if(!isMd5Check()) {
 			generator = new SSDeepHashGenerator();
 		}
 	}
@@ -77,11 +83,11 @@ public class JSWekaAnalyzer {
 		Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
 
 		// Check for malicious and suspicious keywords.
-		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile))) {
+		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile),50000)) {
 			bis.mark(Integer.MAX_VALUE);
 			addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
 
-			if(md5check) {
+			if(isMd5Check()) {
 				checkMd5HashAndUpdateResults(bis, resultsBuilder);
 			}
 			else {
@@ -100,17 +106,21 @@ public class JSWekaAnalyzer {
 		// Calculate MD5 hash.
 		long start = System.nanoTime();
 		String md5hash = md5hashFromFile(bis);
+		//System.out.println("genemp5: " + (System.nanoTime() - start));
 		resultsBuilder.setHash(md5hash);
-		System.out.println("gene: " + (System.nanoTime() - start));
+		start = System.nanoTime();
 		// Check is script is whitelisted.
 		boolean isWhitelisted = whitelist.contains(md5hash);
 		resultsBuilder.setWhitelisted(isWhitelisted);
-		System.out.println("comp: " + (System.nanoTime() - start));
+		//System.out.println("comp: " + (System.nanoTime() - start));
 	}
 	
 	private void checkSsdeepHashAndUpdateResults(String absolutePath, Builder resultsBuilder) {
+		long start = System.nanoTime();
 		String hash = generator.generateHashForFile(absolutePath);
+		//System.out.println("gene: " + (System.nanoTime() - start));
 		resultsBuilder.setHash(hash);
+		start = System.nanoTime();
 		for(String fromList : whitelist) {
 			int score = generator.compare(fromList, hash);
 			if (score > ssdeepLimit) {
@@ -121,6 +131,7 @@ public class JSWekaAnalyzer {
 			//LOGGER.info(""+score);
 		}
 		resultsBuilder.setWhitelisted(false);
+		//System.out.println("comp: " + (System.nanoTime() - start));
 	}
 
 	private void updateLongestAndShortestWordSize(String[] words) {
@@ -282,24 +293,30 @@ public class JSWekaAnalyzer {
 	 * @throws IOException
 	 */
 	public String md5hashFromFile(BufferedInputStream bufferedInputStream) throws IOException {
-		long start = System.nanoTime();
 		bufferedInputStream.reset();
 		String result = null;
 		MessageDigest md;
 		try {
 			md = MessageDigest.getInstance("MD5");
+			md.reset();
 			try (InputStream dis = new DigestInputStream(new WhiteListFileInputStream(bufferedInputStream), md)) {
+				long start = System.nanoTime();
+//				byte[] b = IOUtils.toByteArray(dis);
+//				BigInteger bigInt = new BigInteger(1,md.digest(b));
+//				String hashtext = bigInt.toString(8);
+//				System.out.println(new String(hashtext));
 				while (dis.read() != -1) {
 					// Nothing to do.
 				}
+				//System.out.println("read " + (System.nanoTime() - start));
 				char[] md5 = Hex.encodeHex(md.digest());
 				result = String.valueOf(md5);
+//				System.out.println(result);
 			}
 		} catch (NoSuchAlgorithmException e) {
 			LOGGER.error("Could not create MD5 hash for whitelisting.\n{}", e);
 			result = "";
 		}
-		System.out.println("gen: " + (System.nanoTime() - start));
 		return result;
 	}
 }

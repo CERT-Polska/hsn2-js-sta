@@ -58,8 +58,7 @@ public class JsAnalyzerTask implements Task {
 			"eval", "location.replace", "location.reload", "location.href", "document.body.innerhtml" };
 	private Long jsContextId;
 	private JSWekaAnalyzer weka;
-	private Set<String> whitelist;
-	private static final int MD5_STRING_LENGTH = 32;
+	private Set<SSDeepHash> whitelist;
 
 	public JsAnalyzerTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper inputData, JsCommandLineParams cmd) {
 		this.jobContext = jobContext;
@@ -77,13 +76,9 @@ public class JsAnalyzerTask implements Task {
 			fr = new FileReader(whitelistPath);
 			br = new BufferedReader(fr);
 			String readLine;
-			whitelist = new TreeSet<String>();
+			whitelist = new TreeSet<SSDeepHash>();
 			while ((readLine = br.readLine()) != null) {
-				readLine = readLine.trim();
-				// MD5 hash hex string is always 32 characters length.
-//				if (readLine.length() == MD5_STRING_LENGTH) {
-					whitelist.add(readLine);
-//				}
+				whitelist.add(new SSDeepHash(readLine));
 			}
 		} catch (IOException e) {
 			LOGGER.warn("Cannot access whitelist file.");

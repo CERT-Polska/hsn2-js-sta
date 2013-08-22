@@ -3,8 +3,6 @@ package pl.nask.hsn2.service.analysis;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,19 +18,31 @@ import org.testng.annotations.Test;
 
 import pl.nask.hsn2.protobuff.Resources.JSContextResults;
 import pl.nask.hsn2.protobuff.Resources.JSContextResults.JSClass;
+import pl.nask.hsn2.service.SSDeepHash;
 
 public class JsAnalyzerTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(JsAnalyzerTest.class);
-	private Set<String> whitelist;
-	private String[] jsSourcesWhitelistTrue = { "alert(1+'-');", " alert ( \"1\" ) ; ", " alert \n\t\n\t  ('1');", "\nalert(1)\t;\n" };
-	private String[] jsSourcesWhitelistFalse = { "alert(2);", "alertThis(\"1\");", "alert\n\t\n\t(1+2);", "\nalert('a');alert(1)\t;\n" };
-	private final static String ALERT1_HASH = "f3312b1a03e36409470c404bd2f81e6f";
+	private Set<SSDeepHash> whitelist;
+//	private String[] jsSourcesWhitelistTrue = { "alert(1+'-');", " alert ( \"1\" ) ; ", " alert \n\t\n\t  ('1');", "\nalert(1)\t;\n" };
+//	private String[] jsSourcesWhitelistFalse = { "alert(2);", "alertThis(\"1\");", "alert\n\t\n\t(1+2);", "\nalert('a');alert(1)\t;\n" };
+	private final static SSDeepHash WHITELISTED_HASH = new SSDeepHash(70, "6:7wt8yYmBFUMIchgMu24Rljb7J4ixHdlu7u7X7u/qu/BLzdHxKm+1BX3x2j2QW7Z:7GYE/947buitLEqwBLxHsdBXh2CQW7Z");
 	
-	// For malicious/suspicious tests
 	private static final String JS_SOURCE_LONG = "Shell.Application ADODB.Stream WScript.Shell .exe .bat ms06 ms07 ms08 ms09 "
 			+ "shellcode block heap spray exploit overflow savetofile .Exe .eXe .exE .EXe .eXE .ExE .EXE .Bat .bAt .baT .BAt "
 			+ ".bAT .BaT top.location document.location window.location document.write document.writeln eval location.replace "
 			+ "location.reload location.href document.body.innerhtml myTestMaliciousWordmyTestSuspiciousWord";
+	
+	private static final String JS_SOURCE_LONG_SIMILAR = "Shell.Application ADODB.Stream WScript.Shell .exe .bat ms06 ms07 ms08 ms09 "
+			+ "shellcode block .EXE .Bat .bAt .baT .BAt "
+			+ ".bAT .BaT top.location document.write document.writeln eval location.replace "
+			+ "location.reload myTestMaliciousWordmyTestSuspiciousWord";
+	
+	private static final String JS_SOURCE_LONG_DIFFERENT = "analyzer.classifyString(withInstanceOf(File.class)); "
+			+ "analyzer.classifyString(withInstanceOf(File.class)); analyzer.classifyString(withInstanceOf(File.class)); "
+			+ "analyzer.classifyString(withInstanceOf(File.class)); analyzer.classifyString(withInstanceOf(File.class)); "
+			+ "analyzer.classifyString(withInstanceOf(File.class)); analyzer.classifyString(withInstanceOf(File.class));";
+	
+	
 	private static final String JS_SOURCE_SHORT = ".exeeval";
 	private static final String[] MALICIOUS_KEYWORDS = { "Shell.Application", "ADODB.Stream", "WScript.Shell", ".exe", ".bat", "ms06",
 			"ms07", "ms08", "ms09", "shellcode", "block", "heap", "spray", "exploit", "overflow", "savetofile", ".Exe", ".eXe", ".exE",
@@ -43,8 +53,8 @@ public class JsAnalyzerTest {
 
 	@BeforeClass
 	private void testInit() {
-		whitelist = new HashSet<String>();
-		whitelist.add(ALERT1_HASH);
+		whitelist = new HashSet<SSDeepHash>();
+		whitelist.add(WHITELISTED_HASH);
 	}
 
 	private void mockObjects() {
@@ -65,20 +75,35 @@ public class JsAnalyzerTest {
 		// create analyzer
 		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
 
-		for (int i = 0; i < jsSourcesWhitelistTrue.length; i++) {
 			// Prepare temp file.
-			File f = IoTestsUtils.prepareTempFile(jsSourcesWhitelistTrue[i], JsAnalyzerTest.class.getSimpleName());
+			File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG, JsAnalyzerTest.class.getSimpleName());
 
-			JSContextResults result = analyzer.process(i, f);
+			JSContextResults result = analyzer.process(1, f);
 			boolean isWhitelisted = result.getWhitelisted();
-			LOGGER.info("Source[{}] whitelisted? {}", i, isWhitelisted);
-			LOGGER.info("Source[{}]:\n{}", i, jsSourcesWhitelistTrue[i]);
+			LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
+			LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_LONG);
 			Assert.assertTrue(isWhitelisted, "Should be whitelisted");
 			
-			Assert.assertEquals(result.getHash(), ALERT1_HASH);
-
 			deleteTempFile(f);
-		}
+	}
+	
+	@Test
+	public void whitelistTrueCheckForSimilar() throws Exception {
+		mockObjects();
+
+		// create analyzer
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
+
+			// Prepare temp file.
+			File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG_SIMILAR, JsAnalyzerTest.class.getSimpleName());
+
+			JSContextResults result = analyzer.process(1, f);
+			boolean isWhitelisted = result.getWhitelisted();
+			LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
+			LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_LONG_SIMILAR);
+			Assert.assertTrue(isWhitelisted, "Should be whitelisted");
+			
+			deleteTempFile(f);
 	}
 	
 	private void deleteTempFile(File f){
@@ -96,35 +121,16 @@ public class JsAnalyzerTest {
 		// create analyzer
 		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
 
-		for (int i = 0; i < jsSourcesWhitelistFalse.length; i++) {
-			// Prepare temp file.
-			File f = IoTestsUtils.prepareTempFile(jsSourcesWhitelistFalse[i], JsAnalyzerTest.class.getSimpleName());
+		// Prepare temp file.
+		File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG_DIFFERENT, JsAnalyzerTest.class.getSimpleName());
 
-			JSContextResults result = analyzer.process(i, f);
-			boolean isWhitelisted = result.getWhitelisted();
-			LOGGER.info("Source[{}] whitelisted? {}", i, isWhitelisted);
-			LOGGER.info("Source[{}]:\n{}", i, jsSourcesWhitelistFalse[i]);
-			Assert.assertFalse(isWhitelisted, "Should not be whitelisted");
-			
-			deleteTempFile(f);
-		}
-	}
-
-	@Test()
-	public void whitelistMd5ExceptionCheck() throws Exception {
-		mockObjects();
-		new NonStrictExpectations() {
-			@Mocked
-			MessageDigest md;
-			{
-				MessageDigest.getInstance("MD5");
-				result = new NoSuchAlgorithmException();
-			}
-		};
-		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
-		File f = IoTestsUtils.prepareTempFile(jsSourcesWhitelistTrue[0], JsAnalyzerTest.class.getSimpleName());
-		JSContextResults result = analyzer.process(0, f);
-		Assert.assertFalse(result.getWhitelisted(), "Should not be whitelisted.");
+		JSContextResults result = analyzer.process(1, f);
+		boolean isWhitelisted = result.getWhitelisted();
+		LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
+		LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_LONG_DIFFERENT);
+		Assert.assertFalse(isWhitelisted, "Should not be whitelisted");
+		
+		deleteTempFile(f);
 	}
 
 	@Test

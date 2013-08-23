@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
+import org.testng.annotations.Test;
+
 import mockit.Delegate;
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
@@ -43,7 +45,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.QueueingConsumer;
 
-public class Md5HashTest {
+public class FullProcessHashTest {
 
 	@Mocked
 	Connection c;
@@ -53,12 +55,11 @@ public class Md5HashTest {
 	DeclareOk dok;
 	@Mocked
 	QueueingConsumer consumer;
-	
 	@Mocked("receive")
 	OutConnector outC;
 	
-	//@Test
-	@SuppressWarnings({ "static-access", "rawtypes", "unused"})
+	@Test
+	@SuppressWarnings({"static-access", "rawtypes", "unused"})
 	public void processTest() throws Exception {
 
 		new NonStrictExpectations() {
@@ -84,7 +85,6 @@ public class Md5HashTest {
 						return in;
 					}
 				};
-				
 				jsCMD.getTrainingSetName();
 				result = "out4.arff";
 				
@@ -100,21 +100,16 @@ public class Md5HashTest {
 				jsCMD.getNgramQuantity();
 				result = 50;
 			}
-			
 		};
 		NGramsCalc.initialize("/home/rajdo/hsn/HSN2/trunk/software/Tools/hsn-ngrams/libngrams.so");
 		
-		long start = System.nanoTime();
 		for(int j = 0; j < 10; j++){
 			for(int i = 1; i < 5; i++) {
 				Attribute.Builder attr = Attribute.newBuilder().setName("js_context_list").setType(Type.BYTES).setDataBytes(Reference.newBuilder().setKey(i).setStore(1));
 				ObjectData objectData = ObjectData.newBuilder().setId(1).addAttrs(attr).build();
 				JsAnalyzerTask analyzerTask = new JsAnalyzerTask(new TaskContext(2, 3, 4, null), new ParametersWrapper(), new ObjectDataWrapper(objectData) , new JsCommandLineParams());
-//				System.out.println("ssdeep b " + (System.nanoTime() - start));
 				analyzerTask.process();
-//				System.out.println("ssdeep a " + (System.nanoTime() - start));
 			}
 		}
-		System.out.println("ssdeep " + (System.nanoTime() - start));
 	}
 }

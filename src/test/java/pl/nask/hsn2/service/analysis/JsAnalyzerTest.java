@@ -3,9 +3,8 @@ package pl.nask.hsn2.service.analysis;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
@@ -22,7 +21,7 @@ import pl.nask.hsn2.service.SSDeepHash;
 
 public class JsAnalyzerTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(JsAnalyzerTest.class);
-	private Set<SSDeepHash> whitelist;
+	private List<SSDeepHash> whitelist;
 //	private String[] jsSourcesWhitelistTrue = { "alert(1+'-');", " alert ( \"1\" ) ; ", " alert \n\t\n\t  ('1');", "\nalert(1)\t;\n" };
 //	private String[] jsSourcesWhitelistFalse = { "alert(2);", "alertThis(\"1\");", "alert\n\t\n\t(1+2);", "\nalert('a');alert(1)\t;\n" };
 	private final static SSDeepHash WHITELISTED_HASH = new SSDeepHash(70, "6:7wt8yYmBFUMIchgMu24Rljb7J4ixHdlu7u7X7u/qu/BLzdHxKm+1BX3x2j2QW7Z:7GYE/947buitLEqwBLxHsdBXh2CQW7Z");
@@ -53,7 +52,7 @@ public class JsAnalyzerTest {
 
 	@BeforeClass
 	private void testInit() {
-		whitelist = new HashSet<SSDeepHash>();
+		whitelist = new ArrayList<SSDeepHash>();
 		whitelist.add(WHITELISTED_HASH);
 	}
 

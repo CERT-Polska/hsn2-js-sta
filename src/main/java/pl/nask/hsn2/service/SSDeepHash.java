@@ -3,7 +3,7 @@ package pl.nask.hsn2.service;
 import java.security.InvalidParameterException;
 import java.util.StringTokenizer;
 
-public class SSDeepHash {
+public class SSDeepHash implements Comparable<SSDeepHash>{
 	private final int match;
 	private final String hash;
 	
@@ -32,5 +32,10 @@ public class SSDeepHash {
 
 	public String getHash() {
 		return hash;
+	}
+
+	@Override
+	public int compareTo(SSDeepHash o) {
+		return match - o.match;
 	}
 }

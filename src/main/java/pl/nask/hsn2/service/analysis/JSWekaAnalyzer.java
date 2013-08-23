@@ -28,6 +28,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -53,7 +54,7 @@ public class JSWekaAnalyzer {
 	private static Instances trainingSet = null;
 	private int ngramsLength;
 	private int ngramsQuantity;
-	private Set<SSDeepHash> whitelist;
+	private List<SSDeepHash> whitelist;
 	private final String[] maliciousWords;
 	private final String[] suspiciousWords;
 	private int shortestWordSize = Integer.MAX_VALUE;
@@ -61,7 +62,7 @@ public class JSWekaAnalyzer {
 	private SSDeepHashGenerator generator;
 
 	public JSWekaAnalyzer(String[] maliciousKeywords, String[] suspiciousKeywords, int ngramsLength, int ngramsQuantity,
-			Set<SSDeepHash> whitelist) {
+			List<SSDeepHash> whitelist) {
 		this.ngramsLength = ngramsLength;
 		this.ngramsQuantity = ngramsQuantity;
 		this.whitelist = whitelist;

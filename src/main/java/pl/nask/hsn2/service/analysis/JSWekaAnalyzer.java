@@ -94,7 +94,7 @@ public class JSWekaAnalyzer {
 		resultsBuilder.setHash(hash);
 		for(SSDeepHash ssdeepHash : whitelist) {
 			int score = generator.compare(ssdeepHash.getHash(), hash);
-			if (score > ssdeepHash.getMatch()) {
+			if (score >= ssdeepHash.getMatch()) {
 				resultsBuilder.setWhitelisted(true);
 				return;
 			}

@@ -22,8 +22,6 @@ import pl.nask.hsn2.service.SSDeepHash;
 public class JsAnalyzerTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(JsAnalyzerTest.class);
 	private List<SSDeepHash> whitelist;
-//	private String[] jsSourcesWhitelistTrue = { "alert(1+'-');", " alert ( \"1\" ) ; ", " alert \n\t\n\t  ('1');", "\nalert(1)\t;\n" };
-//	private String[] jsSourcesWhitelistFalse = { "alert(2);", "alertThis(\"1\");", "alert\n\t\n\t(1+2);", "\nalert('a');alert(1)\t;\n" };
 	private final static SSDeepHash WHITELISTED_HASH = new SSDeepHash(70, "6:7wt8yYmBFUMIchgMu24Rljb7J4ixHdlu7u7X7u/qu/BLzdHxKm+1BX3x2j2QW7Z:7GYE/947buitLEqwBLxHsdBXh2CQW7Z");
 	
 	private static final String JS_SOURCE_LONG = "Shell.Application ADODB.Stream WScript.Shell .exe .bat ms06 ms07 ms08 ms09 "
@@ -67,6 +65,28 @@ public class JsAnalyzerTest {
 		};
 	}
 
+	@Test
+	public void shortEqualsCheck() throws Exception {
+		mockObjects();
+		// create white list
+		List<SSDeepHash> whitelist = new ArrayList<SSDeepHash>();
+		whitelist.add(new SSDeepHash(100, "3:kAjJn:kAjJ"));
+		
+		// create analyzer
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
+
+			// Prepare temp file.
+			File f = IoTestsUtils.prepareTempFile(JS_SOURCE_SHORT, JsAnalyzerTest.class.getSimpleName());
+
+			JSContextResults result = analyzer.process(1, f);
+			boolean isWhitelisted = result.getWhitelisted();
+			LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
+			LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_SHORT);
+			Assert.assertTrue(isWhitelisted, "Should be whitelisted");
+			
+			deleteTempFile(f);
+	}
+	
 	@Test
 	public void whitelistTrueCheck() throws Exception {
 		mockObjects();

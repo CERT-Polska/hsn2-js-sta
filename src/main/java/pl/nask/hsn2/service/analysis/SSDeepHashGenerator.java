@@ -45,16 +45,21 @@ public class SSDeepHashGenerator {
 	}
 	
 	public int compare(String fromList, String generated){
-		synchronized (nativeLibrary){
-			Function function = nativeLibrary.getFunction("fuzzy_compare");
-			int result = function.invokeInt(new Object[] {fromList, generated});
-			LOGGER.debug("from whiteList: " + fromList + " generated: " + generated + " result: " + result);
-			if(result != -1){
-				return result;
+		if(!fromList.equals(generated)){
+			synchronized (nativeLibrary){
+				Function function = nativeLibrary.getFunction("fuzzy_compare");
+				int result = function.invokeInt(new Object[] {fromList, generated});
+				LOGGER.debug("from whiteList: " + fromList + " generated: " + generated + " result: " + result);
+				if(result != -1){
+					return result;
+				}
+				else{
+					throw new IllegalStateException("Can not compare hashes: " + fromList + " " + generated);
+				}
 			}
-			else{
-				throw new IllegalStateException("Can not compare hashes: " + fromList + " " + generated);
-			}
+		}
+		else{
+			return 100;
 		}
 	}
 }

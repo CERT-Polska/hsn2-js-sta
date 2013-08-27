@@ -28,10 +28,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +58,7 @@ public class JsAnalyzerTask implements Task {
 			"eval", "location.replace", "location.reload", "location.href", "document.body.innerhtml" };
 	private Long jsContextId;
 	private JSWekaAnalyzer weka;
-	private Set<String> whitelist;
-	private static final int MD5_STRING_LENGTH = 32;
+	private List<SSDeepHash> whitelist;
 
 	public JsAnalyzerTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper inputData, JsCommandLineParams cmd) {
 		this.jobContext = jobContext;
@@ -77,25 +76,17 @@ public class JsAnalyzerTask implements Task {
 			fr = new FileReader(whitelistPath);
 			br = new BufferedReader(fr);
 			String readLine;
-			whitelist = new TreeSet<String>();
+			whitelist = new ArrayList<SSDeepHash>();
 			while ((readLine = br.readLine()) != null) {
-				readLine = readLine.trim();
-				// MD5 hash hex string is always 32 characters length.
-				if (readLine.length() == MD5_STRING_LENGTH) {
-					whitelist.add(readLine);
-				}
+				whitelist.add(new SSDeepHash(readLine));
 			}
+			Collections.sort(whitelist);
 		} catch (IOException e) {
 			LOGGER.warn("Cannot access whitelist file.");
 			LOGGER.debug(e.getMessage(), e);
 		} finally {
-			try {
-				br.close();
-				fr.close();
-			} catch (IOException e) {
-				LOGGER.warn("Cannot close whitelist buffered reader.");
-				LOGGER.debug(e.getMessage(), e);
-			}
+			IOUtils.closeQuietly(br);
+			IOUtils.closeQuietly(fr);
 		}
 	}
 

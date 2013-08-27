@@ -28,6 +28,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -36,7 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import pl.nask.hsn2.protobuff.Resources.JSContextResults;
+import pl.nask.hsn2.protobuff.Resources.JSContextResults.Builder;
 import pl.nask.hsn2.protobuff.Resources.JSContextResults.JSClass;
+import pl.nask.hsn2.service.SSDeepHash;
 import weka.classifiers.Classifier;
 import weka.classifiers.meta.FilteredClassifier;
 import weka.core.Instance;
@@ -47,40 +50,37 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
 public class JSWekaAnalyzer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JSWekaAnalyzer.class);
+	private static final int MAX_SIMILARITY_FACTOR = 100;
 	private static FilteredClassifier fc = null;
 	private static Instances trainingSet = null;
 	private int ngramsLength;
 	private int ngramsQuantity;
-	private Set<String> whitelist;
+	private List<SSDeepHash> whitelist;
 	private final String[] maliciousWords;
 	private final String[] suspiciousWords;
 	private int shortestWordSize = Integer.MAX_VALUE;
 	private int longestWordSize = Integer.MIN_VALUE;
+	private SSDeepHashGenerator generator;
 
 	public JSWekaAnalyzer(String[] maliciousKeywords, String[] suspiciousKeywords, int ngramsLength, int ngramsQuantity,
-			Set<String> whitelist) {
+			List<SSDeepHash> whitelist) {
 		this.ngramsLength = ngramsLength;
 		this.ngramsQuantity = ngramsQuantity;
 		this.whitelist = whitelist;
 		this.maliciousWords = maliciousKeywords.clone();
 		this.suspiciousWords = suspiciousKeywords.clone();
+		generator = new SSDeepHashGenerator();
 	}
 
 	public JSContextResults process(int id, File jsSrcFile) throws IOException {
-		JSContextResults.Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
+		Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
 
 		// Check for malicious and suspicious keywords.
-		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile))) {
+		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile), 50000)) {
 			bis.mark(Integer.MAX_VALUE);
 			addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
 
-			// Calculate MD5 hash.
-			String md5hash = md5hashFromFile(bis);
-			resultsBuilder.setHash(md5hash);
-			
-			// Check is script is whitelisted.
-			boolean isWhitelisted = whitelist.contains(md5hash);
-			resultsBuilder.setWhitelisted(isWhitelisted);
+			checkSsdeepHashAndUpdateResults(jsSrcFile.getAbsolutePath(), resultsBuilder);
 		}
 
 		// Run weka check.
@@ -88,6 +88,28 @@ public class JSWekaAnalyzer {
 		resultsBuilder.setClassification(jsClassify);
 
 		return resultsBuilder.build();
+	}
+	
+	private void checkSsdeepHashAndUpdateResults(String absolutePath, Builder resultsBuilder) {
+		String hash = generator.generateHashForFile(absolutePath);
+		resultsBuilder.setHash(hash);
+		for(SSDeepHash ssdeepHash : whitelist) {
+			if(ssdeepHash.getMatch() < MAX_SIMILARITY_FACTOR){
+				int score = generator.compare(ssdeepHash.getHash(), hash);
+				if (score >= ssdeepHash.getMatch()) {
+					resultsBuilder.setWhitelisted(true);
+					return;
+				}
+			}
+			else if(ssdeepHash.getMatch() == MAX_SIMILARITY_FACTOR && ssdeepHash.getHash().equals(hash)){
+				resultsBuilder.setWhitelisted(true);
+				return;
+			}
+			else{
+				LOGGER.warn("The similarity factor is greater then 100: " + ssdeepHash.getMatch());
+			}
+		}
+		resultsBuilder.setWhitelisted(false);
 	}
 
 	private void updateLongestAndShortestWordSize(String[] words) {
@@ -254,6 +276,7 @@ public class JSWekaAnalyzer {
 		MessageDigest md;
 		try {
 			md = MessageDigest.getInstance("MD5");
+			md.reset();
 			try (InputStream dis = new DigestInputStream(new WhiteListFileInputStream(bufferedInputStream), md)) {
 				while (dis.read() != -1) {
 					// Nothing to do.

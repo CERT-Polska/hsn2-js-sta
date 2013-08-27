@@ -21,11 +21,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
-import org.testng.annotations.Test;
-
 import mockit.Delegate;
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
+
+import org.testng.annotations.Test;
+
 import pl.nask.hsn2.ServiceConnector;
 import pl.nask.hsn2.TaskContext;
 import pl.nask.hsn2.connector.AMQP.OutConnector;
@@ -34,7 +35,6 @@ import pl.nask.hsn2.protobuff.Object.Attribute;
 import pl.nask.hsn2.protobuff.Object.Attribute.Type;
 import pl.nask.hsn2.protobuff.Object.ObjectData;
 import pl.nask.hsn2.protobuff.Object.Reference;
-import pl.nask.hsn2.service.analysis.JSWekaAnalyzer;
 import pl.nask.hsn2.service.analysis.NGramsCalc;
 import pl.nask.hsn2.utils.DataStoreHelper;
 import pl.nask.hsn2.wrappers.ObjectDataWrapper;
@@ -72,8 +72,8 @@ public class FullProcessHashTest {
 			@Mocked
 			JsCommandLineParams jsCMD;
 			
-			@Mocked("isMd5Check")
-			JSWekaAnalyzer jsWA;
+			@Mocked
+			NGramsCalc nGramsCalc;
 			
 			{
 				dsh.getFileAsInputStream(null, anyLong, anyLong);
@@ -89,7 +89,7 @@ public class FullProcessHashTest {
 				result = "out4.arff";
 				
 				jsCMD.getWhitelistPath();
-				result = "whitelist.ssdeep";
+				result = "src/test/resources/whitelist.ssdeep";
 				
 				jsCMD.getClassifierName();
 				result = "weka.classifiers.bayes.NaiveBayes";
@@ -99,9 +99,11 @@ public class FullProcessHashTest {
 				
 				jsCMD.getNgramQuantity();
 				result = 50;
+				
+				nGramsCalc.getNgramsForFile(anyString, anyInt, anyInt);
+				result = "_USE USER SER_ ER_I R_ID _ID_ __ __ _W W Q Q_ Q_O Q_O _O O I I_ I_G I_G _G G A A_ A_F A_FU _FUN FUNC UNCT NCTI CTIO TION ION_ ON_S N_SU _SUB SUBM UBMI BMIT MIT_ IT_B T_BU _BUT BUTT UTTO TTON TON_ ON_U N_US ID_V ";
 			}
 		};
-		NGramsCalc.initialize("/home/rajdo/hsn/HSN2/trunk/software/Tools/hsn-ngrams/libngrams.so");
 		
 		for(int j = 0; j < 10; j++){
 			for(int i = 1; i < 5; i++) {

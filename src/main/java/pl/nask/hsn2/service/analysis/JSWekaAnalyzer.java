@@ -50,6 +50,7 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
 public class JSWekaAnalyzer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JSWekaAnalyzer.class);
+	private static final int MAX_SIMILARITY_FACTOR = 100;
 	private static FilteredClassifier fc = null;
 	private static Instances trainingSet = null;
 	private int ngramsLength;
@@ -93,10 +94,19 @@ public class JSWekaAnalyzer {
 		String hash = generator.generateHashForFile(absolutePath);
 		resultsBuilder.setHash(hash);
 		for(SSDeepHash ssdeepHash : whitelist) {
-			int score = generator.compare(ssdeepHash.getHash(), hash);
-			if (score >= ssdeepHash.getMatch()) {
+			if(ssdeepHash.getMatch() < MAX_SIMILARITY_FACTOR){
+				int score = generator.compare(ssdeepHash.getHash(), hash);
+				if (score >= ssdeepHash.getMatch()) {
+					resultsBuilder.setWhitelisted(true);
+					return;
+				}
+			}
+			else if(ssdeepHash.getMatch() == MAX_SIMILARITY_FACTOR && ssdeepHash.getHash().equals(hash)){
 				resultsBuilder.setWhitelisted(true);
 				return;
+			}
+			else{
+				LOGGER.warn("The similarity factor is greater then 100: " + ssdeepHash.getMatch());
 			}
 		}
 		resultsBuilder.setWhitelisted(false);

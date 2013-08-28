@@ -8,7 +8,7 @@ import com.sun.jna.NativeLibrary;
 
 public class SSDeepHashGenerator {
 	
-	private static NativeLibrary nativeLibrary = NativeLibrary.getInstance("/usr/lib/libfuzzy.so.2");
+	private static NativeLibrary nativeLibrary = NativeLibrary.getInstance("libfuzzy.so.2");
 	private final static int HASH_BYTE_ARRAY_LENGTH = 180;
 	private static final Logger LOGGER = LoggerFactory.getLogger(SSDeepHashGenerator.class);
 	

@@ -26,6 +26,7 @@ import org.apache.commons.daemon.DaemonInitException;
 import pl.nask.hsn2.CommandLineParams;
 import pl.nask.hsn2.ServiceMain;
 import pl.nask.hsn2.service.analysis.NGramsCalc;
+import pl.nask.hsn2.service.analysis.SSDeepHashGenerator;
 import pl.nask.hsn2.task.TaskFactory;
 
 public final class JsAnalyzerService extends ServiceMain {	
@@ -49,6 +50,7 @@ public final class JsAnalyzerService extends ServiceMain {
 	protected void prepareService() {
 		JsCommandLineParams jscmd = (JsCommandLineParams) getCommandLineParams();
 		NGramsCalc.initialize(jscmd.getLibPath());
+		SSDeepHashGenerator.initialize("libfuzzy.so.2");
 	}
 
 	@Override

@@ -101,9 +101,11 @@ public class JSWekaAnalyzer {
 					return;
 				}
 			}
-			else if(ssdeepHash.getMatch() == MAX_SIMILARITY_FACTOR && ssdeepHash.getHash().equals(hash)){
-				resultsBuilder.setWhitelisted(true);
-				return;
+			else if(ssdeepHash.getMatch() == MAX_SIMILARITY_FACTOR){
+				if(ssdeepHash.getHash().equals(hash)){
+					resultsBuilder.setWhitelisted(true);
+					return;
+				}
 			}
 			else{
 				LOGGER.warn("The similarity factor is greater then 100: " + ssdeepHash.getMatch());

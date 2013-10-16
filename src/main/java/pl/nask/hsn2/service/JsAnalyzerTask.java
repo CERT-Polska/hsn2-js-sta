@@ -167,7 +167,6 @@ public class JsAnalyzerTask implements Task {
 				for (JSContext context : contextList.getContextsList()) {
 					// Prepare temporary file.
 					File tempFile = prepareTempJsSource(context);
-
 					// Check temporary file.
 					JSContextResults contextResults = weka.process(context.getId(), tempFile);
 					resultsBuilder.addResults(contextResults);
@@ -205,20 +204,12 @@ public class JsAnalyzerTask implements Task {
 	private File prepareTempJsSource(JSContext context) throws IOException {
 		// Create unique path to file.
 		File f = new File(System.getProperty("java.io.tmpdir"));
-		String tempFileName = f.getAbsolutePath() + File.separator + "hsn2-js-sta_" + context.getId() + System.currentTimeMillis();
-		while (true) {
-			f = new File(tempFileName);
-			if (!f.exists()) {
-				break;
-			}
-			tempFileName += "-";
-		}
-
+		String tempFileName = f.getAbsolutePath() + File.separator + "hsn2-js-sta_" + jobContext.getJobId() + "_" + jobContext.getReqId() + "_"  + context.getId() + System.currentTimeMillis();
+		f = new File(tempFileName);
 		// Write source to file.
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
 			bw.write(context.getSource());
 		}
-
 		// Return path file.
 		return f;
 	}

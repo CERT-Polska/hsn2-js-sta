@@ -48,7 +48,7 @@ public class JsCommandLineParams extends CommandLineParams {
         addOption(WHITELIST_PATH, "path", "Path to whitelist files");
 	}
 
-	public String getTrainingSetName() {
+	public String getTrainingSetPath() {
 		return getOptionValue(TRAINING_SET);
 	}
 
@@ -93,9 +93,9 @@ public class JsCommandLineParams extends CommandLineParams {
 			msg += "Classifier name not set!\n";
 			LOGGER.error("Classifier name not set!");
 		}
-		if (!new File(getTrainingSetName()).exists()){
+		if (!new File(getTrainingSetPath()).exists()){
 			msg += "TrainingSet file not exists!\n";
-			LOGGER.error("TrainingSet file does not exist! Path used: {}", getTrainingSetName());
+			LOGGER.error("TrainingSet file does not exist! Path used: {}", getTrainingSetPath());
 		}
 		if (!new File(getWhitelistPath()).exists()){
 			msg += "Whitelist file not exists!\n";

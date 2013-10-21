@@ -35,7 +35,9 @@ import pl.nask.hsn2.protobuff.Object.Attribute;
 import pl.nask.hsn2.protobuff.Object.Attribute.Type;
 import pl.nask.hsn2.protobuff.Object.ObjectData;
 import pl.nask.hsn2.protobuff.Object.Reference;
+import pl.nask.hsn2.service.analysis.JSWekaAnalyzer;
 import pl.nask.hsn2.service.analysis.NGramsCalc;
+import pl.nask.hsn2.service.analysis.SSDeepHashGenerator;
 import pl.nask.hsn2.utils.DataStoreHelper;
 import pl.nask.hsn2.wrappers.ObjectDataWrapper;
 import pl.nask.hsn2.wrappers.ParametersWrapper;
@@ -85,7 +87,7 @@ public class FullProcessHashTest {
 						return in;
 					}
 				};
-				jsCMD.getTrainingSetName();
+				jsCMD.getTrainingSetPath();
 				result = "out4.arff";
 				
 				jsCMD.getWhitelistPath();
@@ -104,13 +106,17 @@ public class FullProcessHashTest {
 				result = "_USE USER SER_ ER_I R_ID _ID_ __ __ _W W Q Q_ Q_O Q_O _O O I I_ I_G I_G _G G A A_ A_F A_FU _FUN FUNC UNCT NCTI CTIO TION ION_ ON_S N_SU _SUB SUBM UBMI BMIT MIT_ IT_B T_BU _BUT BUTT UTTO TTON TON_ ON_U N_US ID_V ";
 			}
 		};
-		
+		SSDeepHashGenerator.initialize("libfuzzy.so.2"); 
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(0, 0,"out4.arff", "weka.classifiers.bayes.NaiveBayes");
 		for(int j = 0; j < 10; j++){
 			for(int i = 1; i < 5; i++) {
 				Attribute.Builder attr = Attribute.newBuilder().setName("js_context_list").setType(Type.BYTES).setDataBytes(Reference.newBuilder().setKey(i).setStore(1));
 				ObjectData objectData = ObjectData.newBuilder().setId(1).addAttrs(attr).build();
-				JsAnalyzerTask analyzerTask = new JsAnalyzerTask(new TaskContext(2, 3, 4, null), new ParametersWrapper(), new ObjectDataWrapper(objectData) , new JsCommandLineParams());
+				analyzer.prepare(new String[] { "" }, new String[] { "" }, null);
+				
+				JsAnalyzerTask analyzerTask = new JsAnalyzerTask(new TaskContext(2, 3, 4, null), new ParametersWrapper(), new ObjectDataWrapper(objectData) , new JsCommandLineParams(), analyzer);
 				analyzerTask.process();
+				analyzer.eraseLists();
 			}
 		}
 	}

@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,39 +57,38 @@ public class JsAnalyzerTask implements Task {
 			"eval", "location.replace", "location.reload", "location.href", "document.body.innerhtml" };
 	private Long jsContextId;
 	private JSWekaAnalyzer weka;
-	private List<SSDeepHash> whitelist;
+	private String whitelistPath;
+	private ParametersWrapper parameters;
 
-	public JsAnalyzerTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper inputData, JsCommandLineParams cmd) {
+	public JsAnalyzerTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper inputData, JsCommandLineParams cmd, JSWekaAnalyzer wekaAnalyzer) {
 		this.jobContext = jobContext;
 		jsContextId = inputData.getReferenceId("js_context_list");
-		setParameters(parameters);
-		prepareWhitelist(cmd.getWhitelistPath());
-		weka = new JSWekaAnalyzer(maliciousKeywords, suspiciousKeywords, cmd.getNgramLength(), cmd.getNgramQuantity(), whitelist);
-		weka.prepare(cmd.getTrainingSetName(), cmd.getClassifierName());
+		
+		this.parameters = parameters; 
+		
+		whitelistPath = cmd.getWhitelistPath();
+		weka = wekaAnalyzer;
+		
 	}
 
-	private void prepareWhitelist(String whitelistPath) {
-		FileReader fr = null;
-		BufferedReader br = null;
-		try {
-			fr = new FileReader(whitelistPath);
-			br = new BufferedReader(fr);
+	private List<SSDeepHash> prepareWhitelist(String whitelistPath) {
+		List<SSDeepHash> whitelist = new ArrayList<>();
+		
+		try (BufferedReader br = new BufferedReader(new FileReader(whitelistPath));) {
+
 			String readLine;
-			whitelist = new ArrayList<SSDeepHash>();
 			while ((readLine = br.readLine()) != null) {
 				whitelist.add(new SSDeepHash(readLine));
 			}
 			Collections.sort(whitelist);
 		} catch (IOException e) {
-			LOGGER.warn("Cannot access whitelist file.");
+			LOGGER.warn("Cannot access whitelist file. " + e.getMessage());
 			LOGGER.debug(e.getMessage(), e);
-		} finally {
-			IOUtils.closeQuietly(br);
-			IOUtils.closeQuietly(fr);
 		}
+		return whitelist;
 	}
 
-	private void setParameters(ParametersWrapper parameters) {
+	private void updateKeywords() {
 		try {
 			String mKeywords = parameters.get("keywords_malicious");
 			if (mKeywords != null) {
@@ -158,6 +156,10 @@ public class JsAnalyzerTask implements Task {
 	@Override
 	public void process() throws ParameterException, ResourceException, StorageException {
 		if (jsContextId != null) {
+			
+			updateKeywords();
+			List<SSDeepHash> whitelist = prepareWhitelist(whitelistPath);
+			weka.prepare(maliciousKeywords, suspiciousKeywords, whitelist);
 			jobContext.addTimeAttribute("js_sta_time_begin", System.currentTimeMillis());
 
 			try {
@@ -185,7 +187,8 @@ public class JsAnalyzerTask implements Task {
 			} catch (IOException e) {
 				LOGGER.error(e.getMessage(), e);
 			}
-
+			
+			weka.eraseLists();
 			jobContext.addTimeAttribute("js_sta_time_end", System.currentTimeMillis());
 		} else {
 			LOGGER.info("Task skipped, not js");

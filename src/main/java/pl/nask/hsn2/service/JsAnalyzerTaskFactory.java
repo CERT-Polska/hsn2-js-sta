@@ -21,6 +21,7 @@ package pl.nask.hsn2.service;
 
 import pl.nask.hsn2.ParameterException;
 import pl.nask.hsn2.TaskContext;
+import pl.nask.hsn2.service.analysis.JSWekaAnalyzer;
 import pl.nask.hsn2.task.Task;
 import pl.nask.hsn2.task.TaskFactory;
 import pl.nask.hsn2.wrappers.ObjectDataWrapper;
@@ -29,13 +30,15 @@ import pl.nask.hsn2.wrappers.ParametersWrapper;
 public class JsAnalyzerTaskFactory implements TaskFactory {
 
 	private JsCommandLineParams cmd;
+	private JSWekaAnalyzer wekaAnalyzer;
 
 	public JsAnalyzerTaskFactory(JsCommandLineParams cmd) {
 		this.cmd = cmd;
+		this.wekaAnalyzer = new JSWekaAnalyzer(cmd.getNgramLength(), cmd.getNgramQuantity(), cmd.getTrainingSetPath(), cmd.getClassifierName());
 	}
 
 	public Task newTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper data) throws ParameterException {
-		return  new JsAnalyzerTask(jobContext, parameters, data, cmd);
+		return  new JsAnalyzerTask(jobContext, parameters, data, cmd, wekaAnalyzer);
 	}
 
 }

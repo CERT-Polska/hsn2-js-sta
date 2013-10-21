@@ -51,24 +51,24 @@ public class JSWekaAnalyzer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JSWekaAnalyzer.class);
 	private static final int MAX_SIMILARITY_FACTOR = 100;
-	private static FilteredClassifier fc = null;
+	private FilteredClassifier fc = null;
 	private static Instances trainingSet = null;
 	private int ngramsLength;
 	private int ngramsQuantity;
 	private List<SSDeepHash> whitelist;
-	private final String[] maliciousWords;
-	private final String[] suspiciousWords;
+	private String[] maliciousWords;
+	private String[] suspiciousWords;
 	private int shortestWordSize = Integer.MAX_VALUE;
 	private int longestWordSize = Integer.MIN_VALUE;
 	private SSDeepHashGenerator generator;
 
-	public JSWekaAnalyzer(String[] maliciousKeywords, String[] suspiciousKeywords, int ngramsLength, int ngramsQuantity,
-			List<SSDeepHash> whitelist) {
+	public JSWekaAnalyzer(int ngramsLength, int ngramsQuantity, String arffFilePath, String classifierName) {
 		this.ngramsLength = ngramsLength;
 		this.ngramsQuantity = ngramsQuantity;
-		this.whitelist = whitelist;
-		this.maliciousWords = maliciousKeywords.clone();
-		this.suspiciousWords = suspiciousKeywords.clone();
+		
+		createTrainingSet(arffFilePath);
+		createClassifier(classifierName);
+		
 		generator = new SSDeepHashGenerator();
 	}
 
@@ -239,32 +239,38 @@ public class JSWekaAnalyzer {
 		return JSClass.UNCLASSIFIED;
 	}
 
-	private void createTrainingSet(String arffFileName, String classifierName) {
+	private void createTrainingSet(String arffFilePath) {
 		try {
-			ConverterUtils.DataSource source = new ConverterUtils.DataSource(arffFileName);
+			ConverterUtils.DataSource source = new ConverterUtils.DataSource(arffFilePath);
 			Instances trainingSetTemp = source.getDataSet();
 			if (trainingSetTemp.classIndex() == -1) {
 				trainingSetTemp.setClassIndex(trainingSetTemp.numAttributes() - 1);
 			}
-			Classifier naiveBayes = (Classifier) Class.forName(classifierName).newInstance();
-			FilteredClassifier filteredClassifier = new FilteredClassifier();
-			filteredClassifier.setClassifier(naiveBayes);
-			filteredClassifier.setFilter(new StringToWordVector());
-			filteredClassifier.buildClassifier(trainingSetTemp);
 			JSWekaAnalyzer.trainingSet = trainingSetTemp;
-			JSWekaAnalyzer.fc = filteredClassifier;
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage(), e);
-			JSWekaAnalyzer.fc = null;
 		}
 	}
 
-	public void prepare(String arffFileName, String classifierName) {
-		if (trainingSet == null) {
-			createTrainingSet(arffFileName, classifierName);
+	private void createClassifier(String classifierName){
+		try {
+			Classifier classifier = (Classifier) Class.forName(classifierName).newInstance();
+			FilteredClassifier filteredClassifier = new FilteredClassifier();
+			filteredClassifier.setClassifier(classifier);
+			filteredClassifier.setFilter(new StringToWordVector());
+			filteredClassifier.buildClassifier(trainingSet);
+			fc = filteredClassifier;
+		} catch (Exception e) {
+			LOGGER.error(e.getMessage(), e);
 		}
 	}
-
+	
+	public void prepare(String[] maliciousKeywords, String[] suspiciousKeywords, List<SSDeepHash> whitelist) {
+		this.whitelist = whitelist;
+		this.maliciousWords = maliciousKeywords;
+		this.suspiciousWords = suspiciousKeywords;
+	}
+	
 	/**
 	 * Returns hex string representation of MD5 hash for given file.
 	 * 
@@ -291,5 +297,11 @@ public class JSWekaAnalyzer {
 			result = "";
 		}
 		return result;
+	}
+
+	public void eraseLists() {
+		whitelist = null;
+		maliciousWords = null;
+		suspiciousWords = null;
 	}
 }

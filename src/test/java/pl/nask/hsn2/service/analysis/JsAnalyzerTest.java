@@ -75,13 +75,14 @@ public class JsAnalyzerTest {
 
 	private void mockObjects() {
 		new NonStrictExpectations() {
-			@Mocked({ "classifyString" })
+			@Mocked({ "classifyString", "createTrainingSet", "createClassifier" })
 			JSWekaAnalyzer analyzer;
 			{
 				analyzer.classifyString(withInstanceOf(File.class));
 				result = JSClass.UNCLASSIFIED;
 			}
 		};
+		SSDeepHashGenerator.initialize("libfuzzy.so.2"); 
 	}
 
 	@Test
@@ -92,18 +93,19 @@ public class JsAnalyzerTest {
 		whitelist.add(new SSDeepHash(100, "3:kAjJn:kAjJ"));
 		
 		// create analyzer
-		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(0, 0,"","");
+		analyzer.prepare(new String[] { "" }, new String[] { "" }, whitelist);
 
-			// Prepare temp file.
-			File f = IoTestsUtils.prepareTempFile(JS_SOURCE_SHORT, JsAnalyzerTest.class.getSimpleName());
+		// Prepare temp file.
+		File f = IoTestsUtils.prepareTempFile(JS_SOURCE_SHORT, JsAnalyzerTest.class.getSimpleName());
 
-			JSContextResults result = analyzer.process(1, f);
-			boolean isWhitelisted = result.getWhitelisted();
-			LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
-			LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_SHORT);
-			Assert.assertTrue(isWhitelisted, "Should be whitelisted");
-			
-			deleteTempFile(f);
+		JSContextResults result = analyzer.process(1, f);
+		boolean isWhitelisted = result.getWhitelisted();
+		LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
+		LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_SHORT);
+		Assert.assertTrue(isWhitelisted, "Should be whitelisted");
+		
+		deleteTempFile(f);
 	}
 	
 	@Test
@@ -111,18 +113,19 @@ public class JsAnalyzerTest {
 		mockObjects();
 
 		// create analyzer
-		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(0, 0,"","");
+		analyzer.prepare(new String[] { "" }, new String[] { "" }, whitelist);
+		
+		// Prepare temp file.
+		File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG, JsAnalyzerTest.class.getSimpleName());
 
-			// Prepare temp file.
-			File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG, JsAnalyzerTest.class.getSimpleName());
-
-			JSContextResults result = analyzer.process(1, f);
-			boolean isWhitelisted = result.getWhitelisted();
-			LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
-			LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_LONG);
-			Assert.assertTrue(isWhitelisted, "Should be whitelisted");
-			
-			deleteTempFile(f);
+		JSContextResults result = analyzer.process(1, f);
+		boolean isWhitelisted = result.getWhitelisted();
+		LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
+		LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_LONG);
+		Assert.assertTrue(isWhitelisted, "Should be whitelisted");
+		
+		deleteTempFile(f);
 	}
 	
 	@Test
@@ -130,18 +133,19 @@ public class JsAnalyzerTest {
 		mockObjects();
 
 		// create analyzer
-		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(0, 0,"","");
+		analyzer.prepare(new String[] { "" }, new String[] { "" }, whitelist);
+		
+		// Prepare temp file.
+		File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG_SIMILAR, JsAnalyzerTest.class.getSimpleName());
 
-			// Prepare temp file.
-			File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG_SIMILAR, JsAnalyzerTest.class.getSimpleName());
-
-			JSContextResults result = analyzer.process(1, f);
-			boolean isWhitelisted = result.getWhitelisted();
-			LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
-			LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_LONG_SIMILAR);
-			Assert.assertTrue(isWhitelisted, "Should be whitelisted");
-			
-			deleteTempFile(f);
+		JSContextResults result = analyzer.process(1, f);
+		boolean isWhitelisted = result.getWhitelisted();
+		LOGGER.info("Source[{}] whitelisted? {}", 1, isWhitelisted);
+		LOGGER.info("Source[{}]:\n{}", 1, JS_SOURCE_LONG_SIMILAR);
+		Assert.assertTrue(isWhitelisted, "Should be whitelisted");
+		
+		deleteTempFile(f);
 	}
 	
 	private void deleteTempFile(File f){
@@ -157,8 +161,9 @@ public class JsAnalyzerTest {
 		mockObjects();
 
 		// create analyzer
-		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(new String[] { "" }, new String[] { "" }, 0, 0, whitelist);
-
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(0, 0,"","");
+		analyzer.prepare(new String[] { "" }, new String[] { "" }, whitelist);
+		
 		// Prepare temp file.
 		File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG_DIFFERENT, JsAnalyzerTest.class.getSimpleName());
 
@@ -176,8 +181,9 @@ public class JsAnalyzerTest {
 		mockObjects();
 
 		// create analyzer
-		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(MALICIOUS_KEYWORDS, SUSPICIOUS_KEYWORDS, 0, 0, whitelist);
-
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(0, 0,"","");
+		analyzer.prepare(MALICIOUS_KEYWORDS, SUSPICIOUS_KEYWORDS, whitelist);
+		
 		// Prepare temp file.
 		File f = IoTestsUtils.prepareTempFile(JS_SOURCE_LONG, JsAnalyzerTest.class.getSimpleName());
 		JSContextResults result = analyzer.process(1, f);
@@ -201,8 +207,9 @@ public class JsAnalyzerTest {
 		mockObjects();
 
 		// create analyzer
-		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(MALICIOUS_KEYWORDS, SUSPICIOUS_KEYWORDS, 0, 0, whitelist);
-
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(0, 0,"","");
+		analyzer.prepare(MALICIOUS_KEYWORDS, SUSPICIOUS_KEYWORDS, whitelist);
+		
 		// Prepare temp file.
 		File f = IoTestsUtils.prepareTempFile(JS_SOURCE_SHORT, JsAnalyzerTest.class.getSimpleName());
 		JSContextResults result = analyzer.process(1, f);

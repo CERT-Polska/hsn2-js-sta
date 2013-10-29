@@ -54,8 +54,9 @@ public final class JsAnalyzerService extends ServiceMain {
 	}
 
 	@Override
-	protected TaskFactory createTaskFactory(){
-		return new JsAnalyzerTaskFactory((JsCommandLineParams)getCommandLineParams());
+	protected Class<? extends TaskFactory> initializeTaskFactory(){
+		JsAnalyzerTaskFactory.prepereForAllThreads((JsCommandLineParams)getCommandLineParams());
+		return JsAnalyzerTaskFactory.class;
 	}
 
 	@Override

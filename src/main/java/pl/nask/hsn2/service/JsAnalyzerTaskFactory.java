@@ -29,16 +29,18 @@ import pl.nask.hsn2.wrappers.ParametersWrapper;
 
 public class JsAnalyzerTaskFactory implements TaskFactory {
 
-	private JsCommandLineParams cmd;
+	private static JsCommandLineParams cmd;
 	private JSWekaAnalyzer wekaAnalyzer;
 
-	public JsAnalyzerTaskFactory(JsCommandLineParams cmd) {
-		this.cmd = cmd;
-		this.wekaAnalyzer = new JSWekaAnalyzer(cmd.getNgramLength(), cmd.getNgramQuantity(), cmd.getTrainingSetPath(), cmd.getClassifierName());
+	public static void prepereForAllThreads(JsCommandLineParams cmd) {
+		JsAnalyzerTaskFactory.cmd = cmd;
+		}
+	
+	public JsAnalyzerTaskFactory(){
+		wekaAnalyzer = new JSWekaAnalyzer(cmd.getNgramLength(), cmd.getNgramQuantity(), cmd.getTrainingSetPath(), cmd.getClassifierName());
 	}
 
 	public Task newTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper data) throws ParameterException {
 		return  new JsAnalyzerTask(jobContext, parameters, data, cmd, wekaAnalyzer);
 	}
-
 }

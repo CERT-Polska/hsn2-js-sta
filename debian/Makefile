@@ -24,7 +24,7 @@ hsn2-js-sta-i386: hsn2-js-sta-clean
 		cp libngrams.so $(PKGi386)/opt/hsn2/$(HSN2_COMPONENT)/lib/
 #copy WEKA ARFF file
 		cp ../out4.arff $(PKGi386)/opt/hsn2/$(HSN2_COMPONENT)/lib/weka.arff
-		cp ../whitelist.md5 $(PKGi386)/opt/hsn2/$(HSN2_COMPONENT)/lib/whitelist.md5
+		cp ../whitelist.ssdeep $(PKGi386)/opt/hsn2/$(HSN2_COMPONENT)/lib/whitelist.ssdeep
 		cp js-static-analyzer.initd $(PKGi386)/etc/init.d/hsn2-$(HSN2_COMPONENT)
 		cp control $(PKGi386)/DEBIAN
 		sed -i "s/{VER}/${HSN2_VER}-${BUILD_NUMBER}/" $(PKGi386)/DEBIAN/control
@@ -43,7 +43,7 @@ hsn2-js-sta-amd64: hsn2-js-sta-clean
 		cp libngrams.so $(PKGamd64)/opt/hsn2/$(HSN2_COMPONENT)/lib/
 #copy WEKA ARFF file
 		cp ../out4.arff $(PKGamd64)/opt/hsn2/$(HSN2_COMPONENT)/lib/weka.arff
-		cp ../whitelist.md5 $(PKGamd64)/opt/hsn2/$(HSN2_COMPONENT)/lib/whitelist.md5
+		cp ../whitelist.ssdeep $(PKGamd64)/opt/hsn2/$(HSN2_COMPONENT)/lib/whitelist.ssdeep
 		cp js-static-analyzer.initd $(PKGamd64)/etc/init.d/hsn2-$(HSN2_COMPONENT)
 		cp control $(PKGamd64)/DEBIAN
 		sed -i "s/{VER}/${HSN2_VER}-${BUILD_NUMBER}/" $(PKGamd64)/DEBIAN/control

@@ -29,4 +29,4 @@ rebuild:
 
 clean : 
 	@echo "Removing all object files..."
-	rm core *.o $(TARGET)
+	rm -f core *.o $(TARGET)

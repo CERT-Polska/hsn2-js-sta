@@ -1,0 +1,4 @@
+build/hsn2-js-analyzer /opt/hsn2/
+lib/libngrams.so /opt/hsn2/hsn2-js-analyzer/lib/
+out4.arff /opt/hsn2/hsn2-js-analyzer/lib/
+whitelist.ssdeep /opt/hsn2/hsn2-js-analyzer/lib/

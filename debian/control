@@ -1,8 +1,11 @@
-Package: hsn2-js-sta
-Version: {VER}
+Source: hsn2-js-sta
 Section: unknown
 Priority: optional
-Architecture: i386
-Maintainer: Pawel Jacewicz <pawel.jacewicz@cert.pl>
+Maintainer: CERT Polska <info@cert.pl>
+Build-Depends: debhelper (>= 8.0.0), maven
+Standards-Version: 3.9.3
+
+Package: hsn2-js-sta
+Architecture: i386 amd64
+Depends: ${misc:Depends}
 Description: HSN2 JavaScript Static Analyzer Service
-Distribution: {DEBIAN_DIST}

@@ -71,10 +71,10 @@ public class FullProcessHashTest {
 			@Mocked
 			DataStoreHelper dsh;
 			
-			@Mocked
+			@Mocked(stubOutClassInitialization = true)
 			JsCommandLineParams jsCMD;
 			
-			@Mocked
+			@Mocked(stubOutClassInitialization = true)
 			NGramsCalc nGramsCalc;
 			
 			{

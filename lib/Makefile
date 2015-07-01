@@ -1,5 +1,8 @@
+ARCH := $(shell getconf LONG_BIT)
 CXXFLAGS=-fPIC
-CFLAGS = -fPIC -I/usr/lib/jvm/java-6-sun/include -I/usr/lib/jvm/java-6-sun/include/linux
+CFLAGS_32 = -fPIC -I/usr/lib/jvm/java-7-openjdk-i386/include -I/usr/lib/jvm/java-7-openjdk-i386/include/linux
+CFLAGS_64 = -fPIC -I/usr/lib/jvm/java-7-openjdk-amd64/include -I/usr/lib/jvm/java-7-openjdk-amd64/include/linux
+CFLAGS := $(CFLAGS_$(ARCH))
 HDRS = mystring.h INgrams.h ngrams.h CharNgrams.h WordNgrams.h text2wfreq.h pl_nask_hsn_ngrams_NGramsCalc.h
 SRCS = string.cpp INgrams.cpp ngrams.cpp CharNgrams.cpp WordNgrams.cpp text2wfreq.cpp pl_nask_hsn_ngrams_NGramsCalc.cpp
 OBJS = string.o INgrams.o ngrams.o CharNgrams.o WordNgrams.o text2wfreq.o pl_nask_hsn_ngrams_NGramsCalc.o
@@ -11,7 +14,7 @@ default : $(TARGET)
 #ngrams.dll : $(OBJS)
 #	g++ -Wall -D_JNI_IMPLEMENTATION_ -Wl,--kill-at -shared $(CFLAGS) -o $(TARGET) $(OBJS)
 libngrams.so : $(OBJS)
-	g++ -fPIC -shared -I/usr/lib/jvm/java-6-sun/include -o $(TARGET) $(OBJS)
+	g++ $(CFLAGS) -shared -o $(TARGET) $(OBJS)
 
 string.o: mystring.h
 INgrams.o: INgrams.h

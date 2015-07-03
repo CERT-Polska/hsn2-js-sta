@@ -117,4 +117,6 @@
 			</build>
 		</profile>
 	</profiles>
+	<description>HSN2 JavaScript Analyzer service is a javascript static analyzer service based on the Low Interaction
+component of the first version of HSN system.</description>
 </project>

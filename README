@@ -1,7 +1,7 @@
 HSN2 JavaScript Analyzer (hsn2-js-sta)
 
 
-HSN2 JavaScript Analyzer service is a javascript static analyzer based on Low Interaction
+HSN2 JavaScript Analyzer service is a javascript static analyzer service based on the Low Interaction
 component of the first version of HSN system.
 
 

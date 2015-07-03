@@ -10,3 +10,5 @@ Architecture: i386 amd64
 Depends: ${misc:Depends}, java-wrappers, openjdk-7-jre, jsvc
 Homepage: http://www.honeyspider.net
 Description: HSN2 JavaScript Static Analyzer Service
+ A javascript static analyzer service based on the Low Interaction
+ component of the first version of HSN system.

@@ -1,17 +1,17 @@
 
-COMPONENT=hsn2-js-analyzer
+COMPONENT=js-analyzer
+FULL_COMPONENT=hsn2-${COMPONENT}
 
-all:	${COMPONENT}-package
+all:	${FULL_COMPONENT}-package
 
-clean:	${COMPONENT}-package-clean
+clean:	${FULL_COMPONENT}-package-clean
 
-${COMPONENT}-package:
-	cd lib; make rebuild
+${FULL_COMPONENT}-package:
 	mvn clean install -U -Pbundle -Dmaven.test.skip
 	mkdir -p build/${COMPONENT}
-	tar xzf target/${COMPONENT}-1.0.0-SNAPSHOT.tar.gz -C build/${COMPONENT}
+	tar xzf target/${FULL_COMPONENT}-1.0.0-SNAPSHOT.tar.gz -C build/${COMPONENT}
 
-${COMPONENT}-package-clean:
+${FULL_COMPONENT}-package-clean:
 	rm -rf build
 
 build-local:

@@ -7,7 +7,7 @@ Standards-Version: 3.9.3
 
 Package: hsn2-js-sta
 Architecture: i386 amd64
-Depends: ${misc:Depends}, java-wrappers, openjdk-7-jre, jsvc, libfuzzy2
+Depends: ${misc:Depends}, hsn2-commons-debian, java-wrappers, openjdk-7-jre, jsvc, libfuzzy2
 Homepage: http://www.honeyspider.net
 Description: HSN2 JavaScript Static Analyzer Service
  A javascript static analyzer service based on the Low Interaction

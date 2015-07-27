@@ -15,7 +15,7 @@ HSN2_COMPONENT="js-analyzer"
 MAINCLASS="pl.nask.hsn2.service.JsAnalyzerService"
 CONFFILE=/etc/hsn2/js-analyzer.conf
 
-HSN2_JMX_PORT=1105
+#HSN2_JMX_PORT=1105
 HSN2_JVM_PARAMS_MEMORY=-Xmx1200m
 
 . /lib/hsn2/init-functions-java

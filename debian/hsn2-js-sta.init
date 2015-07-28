@@ -26,7 +26,8 @@ prepare_start() {
 		--maxThreads $MAX_THREADS \
 		--trainingSet ${HSN2_COMPONENT_HOME}/lib/weka.arff \
 		--libPath ${HSN2_COMPONENT_HOME}/lib/libngrams.so \
-		--whitelistPath ${HSN2_COMPONENT_HOME}/lib/whitelist.ssdeep"
+		--whitelistPath ${HSN2_COMPONENT_HOME}/lib/whitelist.ssdeep \
+		--logLevel ${LOG_LEVEL}"
 }
 
 choose_java_service_action $@

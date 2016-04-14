@@ -88,7 +88,7 @@ public class FullProcessHashTest {
 					}
 				};
 				jsCMD.getTrainingSetPath();
-				result = "out4.arff";
+				result = "weka.arff";
 				
 				jsCMD.getWhitelistPath();
 				result = "src/test/resources/whitelist.ssdeep";
@@ -107,7 +107,7 @@ public class FullProcessHashTest {
 			}
 		};
 		SSDeepHashGenerator.initialize("libfuzzy.so.2"); 
-		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(0, 0,"out4.arff", "weka.classifiers.bayes.NaiveBayes");
+		JSWekaAnalyzer analyzer = new JSWekaAnalyzer(0, 0,"weka.arff", "weka.classifiers.bayes.NaiveBayes");
 		for(int j = 0; j < 10; j++){
 			for(int i = 1; i < 5; i++) {
 				Attribute.Builder attr = Attribute.newBuilder().setName("js_context_list").setType(Type.BYTES).setDataBytes(Reference.newBuilder().setKey(i).setStore(1));

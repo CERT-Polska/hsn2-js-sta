@@ -149,12 +149,12 @@ public class JsAnalyzerTask implements Task {
 		return list.toArray(new String[list.size()]);
 	}
 
-	public boolean takesMuchTime() {
+	public final boolean takesMuchTime() {
 		return false;
 	}
 
 	@Override
-	public void process() throws ParameterException, ResourceException, StorageException {
+	public final void process() throws ParameterException, ResourceException, StorageException {
 		if (jsContextId != null) {
 			
 			updateKeywords();

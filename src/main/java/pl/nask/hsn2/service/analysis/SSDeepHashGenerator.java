@@ -28,8 +28,9 @@ import com.sun.jna.NativeLibrary;
 public class SSDeepHashGenerator {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(SSDeepHashGenerator.class);
+	private static final int HASH_BYTE_ARRAY_LENGTH = 180;
+	private static final int SSDEEP_EQUALS_VAL = 100;
 	private static NativeLibrary nativeLibrary;
-	private final static int HASH_BYTE_ARRAY_LENGTH = 180;
 	
 	public static void initialize(String libName) {
 		LOGGER.info("Loading ssdeep library");
@@ -38,7 +39,7 @@ public class SSDeepHashGenerator {
 		
 	}
 	
-	public String generateHash(String doc){
+	public final String generateHash(String doc){
 		synchronized (nativeLibrary){
 			Function function = nativeLibrary.getFunction("fuzzy_hash_buf");
 			byte[] result = new byte[HASH_BYTE_ARRAY_LENGTH];
@@ -54,7 +55,7 @@ public class SSDeepHashGenerator {
 		}
 	}
 	
-	public String generateHashForFile(String path){
+	public final String generateHashForFile(String path){
 		synchronized (nativeLibrary){
 			Function function = nativeLibrary.getFunction("fuzzy_hash_filename");
 			byte[] result = new byte[HASH_BYTE_ARRAY_LENGTH];
@@ -70,7 +71,7 @@ public class SSDeepHashGenerator {
 		}
 	}
 	
-	public int compare(String fromList, String generated){
+	public final int compare(String fromList, String generated){
 		if(!fromList.equals(generated)){
 			synchronized (nativeLibrary){
 				Function function = nativeLibrary.getFunction("fuzzy_compare");
@@ -85,7 +86,7 @@ public class SSDeepHashGenerator {
 			}
 		}
 		else{
-			return 100;
+			return SSDEEP_EQUALS_VAL;
 		}
 	}
 }

@@ -38,7 +38,7 @@ public class JsCommandLineParams extends CommandLineParams {
     private static final int NGRAM_LENGTH_DEFAULT = 4;
 
 	@Override
-    public void initOptions() {
+    public final void initOptions() {
         super.initOptions();
         addOption(TRAINING_SET, "path", "Path to the ARFF file");
         addOption(CLASSIFIER_NAME, "name", "Parameter declares the name of classifier to be used by Weka Toolkit");
@@ -48,28 +48,28 @@ public class JsCommandLineParams extends CommandLineParams {
         addOption(WHITELIST_PATH, "path", "Path to whitelist files");
 	}
 
-	public String getTrainingSetPath() {
+	public final String getTrainingSetPath() {
 		return getOptionValue(TRAINING_SET);
 	}
 
-	public String getWhitelistPath() {
+	public final String getWhitelistPath() {
 		return getOptionValue(WHITELIST_PATH);
 	}
 	
-	public String getClassifierName() {
+	public final String getClassifierName() {
 		return getOptionValue(CLASSIFIER_NAME);
 	}
 
-	public int getNgramLength() {
+	public final int getNgramLength() {
 		return getOptionIntValue(NGRAM_LENGHT);
 	}
 
-	public int getNgramQuantity() {
+	public final int getNgramQuantity() {
 		return getOptionIntValue(NGRAM_QUANTITY);
 	}
 
 	@Override
-	protected void initDefaults() {
+	protected final void initDefaults() {
 	    super.initDefaults();
 	    setDefaultValue(TRAINING_SET, "out4.arff");
 	    setDefaultValue(WHITELIST_PATH, "whitelist");
@@ -81,12 +81,12 @@ public class JsCommandLineParams extends CommandLineParams {
 	    setDefaultDataStoreAddress("http://127.0.0.1:8080");
 	}
 
-	public String getLibPath() {
+	public final String getLibPath() {
 		return getOptionValue(LIB_PATH);
 	}
 
 	@Override
-	protected void validate(){
+	protected final void validate(){
 		super.validate();
 		String msg = "";
 		if (getClassifierName() == null){

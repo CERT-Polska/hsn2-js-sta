@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,6 +52,7 @@ public class JSWekaAnalyzer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JSWekaAnalyzer.class);
 	private static final int MAX_SIMILARITY_FACTOR = 100;
+	private static final int BUFFER_SIZE = 50000;
 	private FilteredClassifier fc = null;
 	private static Instances trainingSet = null;
 	private int ngramsLength;
@@ -72,11 +74,11 @@ public class JSWekaAnalyzer {
 		generator = new SSDeepHashGenerator();
 	}
 
-	public JSContextResults process(int id, File jsSrcFile) throws IOException {
+	public final JSContextResults process(int id, File jsSrcFile) throws IOException {
 		Builder resultsBuilder = JSContextResults.newBuilder().setId(id);
 
 		// Check for malicious and suspicious keywords.
-		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile), 50000)) {
+		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(jsSrcFile), BUFFER_SIZE)) {
 			bis.mark(Integer.MAX_VALUE);
 			addMaliciousAndSuspiciousKeywords(resultsBuilder, bis);
 
@@ -215,7 +217,7 @@ public class JSWekaAnalyzer {
 		}
 	}
 
-	public JSClass classifyString(File file) {
+	public final JSClass classifyString(File file) {
 		String ngrams = NGramsCalc.getNgramsForFile(file.getPath(), ngramsLength, ngramsQuantity);
 
 		if (ngrams == null) {
@@ -265,10 +267,10 @@ public class JSWekaAnalyzer {
 		}
 	}
 	
-	public void prepare(String[] maliciousKeywords, String[] suspiciousKeywords, List<SSDeepHash> whitelist) {
-		this.whitelist = whitelist;
-		this.maliciousWords = maliciousKeywords;
-		this.suspiciousWords = suspiciousKeywords;
+	public final void prepare(String[] maliciousKeywords, String[] suspiciousKeywords, List<SSDeepHash> whitelist) {
+		this.whitelist = whitelist == null ? null : new ArrayList<>(whitelist);
+		this.maliciousWords = maliciousKeywords == null ? null : maliciousKeywords.clone();
+		this.suspiciousWords = suspiciousKeywords == null ? null : suspiciousKeywords.clone();
 	}
 	
 	/**
@@ -278,7 +280,7 @@ public class JSWekaAnalyzer {
 	 * @return
 	 * @throws IOException
 	 */
-	public String md5hashFromFile(BufferedInputStream bufferedInputStream) throws IOException {
+	public final String md5hashFromFile(BufferedInputStream bufferedInputStream) throws IOException {
 		bufferedInputStream.reset();
 		String result = null;
 		MessageDigest md;
@@ -286,7 +288,7 @@ public class JSWekaAnalyzer {
 			md = MessageDigest.getInstance("MD5");
 			md.reset();
 			try (InputStream dis = new DigestInputStream(new WhiteListFileInputStream(bufferedInputStream), md)) {
-				while (dis.read() != -1) {
+				while (dis.read() != -1) {	//NOPMD
 					// Nothing to do.
 				}
 				char[] md5 = Hex.encodeHex(md.digest());
@@ -299,7 +301,7 @@ public class JSWekaAnalyzer {
 		return result;
 	}
 
-	public void eraseLists() {
+	public final void eraseLists() {
 		whitelist = null;
 		maliciousWords = null;
 		suspiciousWords = null;

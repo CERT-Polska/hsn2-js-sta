@@ -32,29 +32,38 @@ public class SSDeepHash implements Comparable<SSDeepHash>{
 	}
 	
 	public SSDeepHash(String readLine) {
-		readLine = readLine.trim();
-		StringTokenizer tokenizer = new StringTokenizer(readLine);
+		String line = readLine.trim();
+		StringTokenizer tokenizer = new StringTokenizer(line);
 		
 		int count = tokenizer.countTokens();
 		if(count == 2){
-			match = new Integer(tokenizer.nextToken());
+			match = Integer.valueOf(tokenizer.nextToken());
 			hash = tokenizer.nextToken();
 		}
 		else{
-			throw new InvalidParameterException("Expect 2 tokens, but found " + count + " in line " + readLine);
+			throw new InvalidParameterException("Expect 2 tokens, but found " + count + " in line " + line);
 		}
 	}
 
-	public int getMatch() {
+	public final int getMatch() {
 		return match;
 	}
 
-	public String getHash() {
+	public final String getHash() {
 		return hash;
 	}
 
 	@Override
-	public int compareTo(SSDeepHash o) {
+	public final int compareTo(SSDeepHash o) {
 		return match - o.match;
+	}
+	
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof SSDeepHash)) {
+			return false;
+		}
+		SSDeepHash s = (SSDeepHash) o;
+		return match == s.match && hash.equals(s.hash);
 	}
 }

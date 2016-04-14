@@ -38,7 +38,7 @@ public class WhiteListFileInputStream extends InputStream {
 	 * Returns only [a-zA-Z0-9] characters. All other characters are ignored. Returns -1 for EOF.
 	 */
 	@Override
-	public int read() throws IOException {
+	public final int read() throws IOException {
 		int result;
 		do {
 			result = is.read();
@@ -90,7 +90,7 @@ public class WhiteListFileInputStream extends InputStream {
 	}
 	
 	@Override
-	public void close() throws IOException {
+	public final void close() throws IOException {
 		is.close();
 	}
 }

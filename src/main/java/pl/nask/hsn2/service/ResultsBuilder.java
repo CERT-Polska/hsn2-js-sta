@@ -33,7 +33,7 @@ public class ResultsBuilder {
 	private boolean suspiciousKeywords = false;
 	private JSClass classification = JSClass.UNCLASSIFIED;
 
-	public void addResults(JSContextResults contextResults) {
+	public final void addResults(JSContextResults contextResults) {
 		resultsList.add(contextResults);
 		setKeywordsFlag(contextResults);
 		updateClassification(contextResults);
@@ -68,27 +68,27 @@ public class ResultsBuilder {
 		}
 	}
 
-	public JSStaticResults getJSStaticResults() {
+	public final JSStaticResults getJSStaticResults() {
 		return JSStaticResults.newBuilder().addAllResults(resultsList).build();
 	}
 
-	public boolean isMaliciousKeywords() {
+	public final boolean isMaliciousKeywords() {
 		return maliciousKeywords;
 	}
 
-	public boolean isSuspiciousKeywords() {
+	public final boolean isSuspiciousKeywords() {
 		return suspiciousKeywords;
 	}
 
-	public JSClass getClassification() {
+	public final JSClass getClassification() {
 		return classification;
 	}
 
-	public String getClassificationAsString() {
+	public final String getClassificationAsString() {
 		return classification.name().toLowerCase();
 	}
 
-	public byte[] getJSStaticResultsAsBytes() {
+	public final byte[] getJSStaticResultsAsBytes() {
 		return getJSStaticResults().toByteArray();
 	}
 }

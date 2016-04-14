@@ -36,12 +36,12 @@ public class CircularStringBuffer {
 		}
 	}
 
-	public void add(char ch) {
+	public final void add(char ch) {
 		buffer.deleteCharAt(0);
 		buffer.append(ch);
 	}
 
-	public String getAsString() {
+	public final String getAsString() {
 		return buffer.toString();
 	}
 }

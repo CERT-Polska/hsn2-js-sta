@@ -1,12 +1,12 @@
 HSN2 JavaScript Analyzer (hsn2-js-sta)
 
 
-HSN2 JavaScript Analyzer service is a javascript static analyzer based on Low Interaction
+HSN2 JavaScript Analyzer service is a javascript static analyzer service based on the Low Interaction
 component of the first version of HSN system.
 
 
 
-This repository is a part of bigger project: Honeyspider Network 2.0.
+This repository is a part of bigger project: Honeyspider Network 2.1.
 Project bundle is located at: https://github.com/CERT-Polska/hsn2-bundle.
 More information is available on the project's website:
 http://www.honeyspider.net

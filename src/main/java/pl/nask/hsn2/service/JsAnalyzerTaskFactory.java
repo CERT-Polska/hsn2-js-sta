@@ -1,7 +1,7 @@
 /*
  * Copyright (c) NASK, NCSC
  * 
- * This file is part of HoneySpider Network 2.0.
+ * This file is part of HoneySpider Network 2.1.
  * 
  * This is a free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ package pl.nask.hsn2.service;
 
 import pl.nask.hsn2.ParameterException;
 import pl.nask.hsn2.TaskContext;
+import pl.nask.hsn2.service.analysis.JSWekaAnalyzer;
 import pl.nask.hsn2.task.Task;
 import pl.nask.hsn2.task.TaskFactory;
 import pl.nask.hsn2.wrappers.ObjectDataWrapper;
@@ -28,14 +29,19 @@ import pl.nask.hsn2.wrappers.ParametersWrapper;
 
 public class JsAnalyzerTaskFactory implements TaskFactory {
 
-	private JsCommandLineParams cmd;
+	private static JsCommandLineParams cmd;
+	private JSWekaAnalyzer wekaAnalyzer;
 
-	public JsAnalyzerTaskFactory(JsCommandLineParams cmd) {
-		this.cmd = cmd;
+	public static void prepereForAllThreads(JsCommandLineParams cmd) {
+		JsAnalyzerTaskFactory.cmd = cmd;
+	}
+	
+	public JsAnalyzerTaskFactory(){
+		wekaAnalyzer = new JSWekaAnalyzer(cmd.getNgramLength(), cmd.getNgramQuantity(), cmd.getTrainingSetPath(), cmd.getClassifierName());
 	}
 
-	public Task newTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper data) throws ParameterException {
-		return  new JsAnalyzerTask(jobContext, parameters, data, cmd);
+	@Override
+	public final Task newTask(TaskContext jobContext, ParametersWrapper parameters, ObjectDataWrapper data) throws ParameterException {
+		return  new JsAnalyzerTask(jobContext, parameters, data, cmd, wekaAnalyzer);
 	}
-
 }

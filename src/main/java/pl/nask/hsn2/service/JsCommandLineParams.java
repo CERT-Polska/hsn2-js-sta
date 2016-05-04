@@ -1,7 +1,7 @@
 /*
  * Copyright (c) NASK, NCSC
  * 
- * This file is part of HoneySpider Network 2.0.
+ * This file is part of HoneySpider Network 2.1.
  * 
  * This is a free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,16 +27,18 @@ import org.slf4j.LoggerFactory;
 import pl.nask.hsn2.CommandLineParams;
 
 public class JsCommandLineParams extends CommandLineParams {
-    private final static OptionNameWrapper TRAINING_SET = new OptionNameWrapper("ts", "trainingSet");
-    private final static OptionNameWrapper CLASSIFIER_NAME = new OptionNameWrapper("cn", "classifierName");
-    private final static OptionNameWrapper NGRAM_LENGHT = new OptionNameWrapper("nl", "ngramLength");
-    private final static OptionNameWrapper NGRAM_QUANTITY = new OptionNameWrapper("nq", "ngramQuantity");
-    private final static OptionNameWrapper LIB_PATH = new OptionNameWrapper("lib", "libPath");
-    private final static OptionNameWrapper WHITELIST_PATH = new OptionNameWrapper("wp", "whitelistPath");
-    private final static Logger LOGGER = LoggerFactory.getLogger(JsCommandLineParams.class);
+	private static final OptionNameWrapper TRAINING_SET = new OptionNameWrapper("ts", "trainingSet");
+    private static final OptionNameWrapper CLASSIFIER_NAME = new OptionNameWrapper("cn", "classifierName");
+    private static final OptionNameWrapper NGRAM_LENGHT = new OptionNameWrapper("nl", "ngramLength");
+    private static final OptionNameWrapper NGRAM_QUANTITY = new OptionNameWrapper("nq", "ngramQuantity");
+    private static final OptionNameWrapper LIB_PATH = new OptionNameWrapper("lib", "libPath");
+    private static final OptionNameWrapper WHITELIST_PATH = new OptionNameWrapper("wp", "whitelistPath");
+    private static final Logger LOGGER = LoggerFactory.getLogger(JsCommandLineParams.class);
+    private static final int NGRAM_QUANTITY_DEFAULT = 50;
+    private static final int NGRAM_LENGTH_DEFAULT = 4;
 
 	@Override
-    public void initOptions() {
+    public final void initOptions() {
         super.initOptions();
         addOption(TRAINING_SET, "path", "Path to the ARFF file");
         addOption(CLASSIFIER_NAME, "name", "Parameter declares the name of classifier to be used by Weka Toolkit");
@@ -46,54 +48,54 @@ public class JsCommandLineParams extends CommandLineParams {
         addOption(WHITELIST_PATH, "path", "Path to whitelist files");
 	}
 
-	public String getTrainingSetName() {
+	public final String getTrainingSetPath() {
 		return getOptionValue(TRAINING_SET);
 	}
 
-	public String getWhitelistPath() {
+	public final String getWhitelistPath() {
 		return getOptionValue(WHITELIST_PATH);
 	}
 	
-	public String getClassifierName() {
+	public final String getClassifierName() {
 		return getOptionValue(CLASSIFIER_NAME);
 	}
 
-	public int getNgramLength() {
+	public final int getNgramLength() {
 		return getOptionIntValue(NGRAM_LENGHT);
 	}
 
-	public int getNgramQuantity() {
+	public final int getNgramQuantity() {
 		return getOptionIntValue(NGRAM_QUANTITY);
 	}
 
 	@Override
-	protected void initDefaults() {
+	protected final void initDefaults() {
 	    super.initDefaults();
 	    setDefaultValue(TRAINING_SET, "out4.arff");
 	    setDefaultValue(WHITELIST_PATH, "whitelist");
 	    setDefaultValue(CLASSIFIER_NAME, "weka.classifiers.bayes.NaiveBayes");
-	    setDefaultIntValue(NGRAM_LENGHT, 4);
-	    setDefaultIntValue(NGRAM_QUANTITY, 50);
+	    setDefaultIntValue(NGRAM_LENGHT, NGRAM_LENGTH_DEFAULT);
+	    setDefaultIntValue(NGRAM_QUANTITY, NGRAM_QUANTITY_DEFAULT);
 	    setDefaultMaxThreads(1);
 	    setDefaultServiceNameAndQueueName("js-sta");
 	    setDefaultDataStoreAddress("http://127.0.0.1:8080");
 	}
 
-	public String getLibPath() {
+	public final String getLibPath() {
 		return getOptionValue(LIB_PATH);
 	}
 
 	@Override
-	protected void validate(){
+	protected final void validate(){
 		super.validate();
 		String msg = "";
 		if (getClassifierName() == null){
 			msg += "Classifier name not set!\n";
 			LOGGER.error("Classifier name not set!");
 		}
-		if (!new File(getTrainingSetName()).exists()){
+		if (!new File(getTrainingSetPath()).exists()){
 			msg += "TrainingSet file not exists!\n";
-			LOGGER.error("TrainingSet file does not exist! Path used: {}", getTrainingSetName());
+			LOGGER.error("TrainingSet file does not exist! Path used: {}", getTrainingSetPath());
 		}
 		if (!new File(getWhitelistPath()).exists()){
 			msg += "Whitelist file not exists!\n";

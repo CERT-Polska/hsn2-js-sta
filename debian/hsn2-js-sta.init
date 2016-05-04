@@ -1,0 +1,35 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:               hsn2-js-sta
+# Required-Start:         $remote_fs
+# Required-Stop:          $remote_fs
+# Default-Start:          2 3 4 5
+# Default-Stop:           0 1 6
+# Short-Description:      Start/Stop the HSN2 JavaScript Static Analyzer
+# Description:            Start/Stop the HSN2 JavaScript Static Analyzer Service daemon.
+### END INIT INFO
+
+NAME="HSN2 JavaScript Static Analyzer"
+HSN2_COMPONENT="js-analyzer"
+MAINCLASS="pl.nask.hsn2.service.JsAnalyzerService"
+CONFFILE=/etc/hsn2/js-analyzer.conf
+
+#HSN2_JMX_PORT=1105
+HSN2_JVM_PARAMS_MEMORY=-Xmx1200m
+
+. /lib/hsn2/init-functions-java
+
+prepare_start() {
+	HSN2_COMPONENT_PARAMS="-connector $BROKER_ADDRESS \
+		--dataStore http://$DATASTORE_ADDRESS \
+		--maxThreads $MAX_THREADS \
+		--trainingSet ${HSN2_COMPONENT_HOME}/lib/weka.arff \
+		--libPath ${HSN2_COMPONENT_HOME}/lib/libngrams.so \
+		--whitelistPath ${HSN2_COMPONENT_HOME}/lib/whitelist.ssdeep \
+		--logLevel ${LOG_LEVEL}"
+}
+
+choose_java_service_action $@
+
+exit $?

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) NASK, NCSC
  * 
- * This file is part of HoneySpider Network 2.0.
+ * This file is part of HoneySpider Network 2.1.
  * 
  * This is a free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,19 +27,19 @@ import pl.nask.hsn2.protobuff.Resources.JSContextResults.JSClass;
 import pl.nask.hsn2.protobuff.Resources.JSStaticResults;
 
 public class ResultsBuilder {
-
+	private static final int MALICIOUS_ID = 3;
 	private List<JSContextResults> resultsList = new ArrayList<JSContextResults>();
 	private boolean maliciousKeywords = false;
 	private boolean suspiciousKeywords = false;
 	private JSClass classification = JSClass.UNCLASSIFIED;
 
-	public void addResults(JSContextResults contextResults){
+	public final void addResults(JSContextResults contextResults) {
 		resultsList.add(contextResults);
 		setKeywordsFlag(contextResults);
 		updateClassification(contextResults);
 	}
 
-	private void setKeywordsFlag(JSContextResults contextResults){
+	private void setKeywordsFlag(JSContextResults contextResults) {
 		maliciousKeywords = maliciousKeywords || contextResults.getMaliciousKeywordsCount() > 0;
 		suspiciousKeywords = suspiciousKeywords || contextResults.getSuspiciousKeywordsCount() > 0;
 	}
@@ -48,43 +48,47 @@ public class ResultsBuilder {
 		JSClass newClassification = contextResults.getClassification();
 		boolean isWhitelisted = contextResults.getWhitelisted();
 		if (!isWhitelisted && order(classification) < order(newClassification)) {
-		    classification = newClassification;
+			classification = newClassification;
 		}
 	}
 
 	private int order(JSClass jsclass) {
 		// unclassified < benign < obfuscated < malicious
-        switch (jsclass) {
-        case UNCLASSIFIED: return 0;
-        case BENIGN: return 1;
-        case OBFUSCATED: return 2;
-        case MALICIOUS: return 3;
-        default:
-            throw new IllegalArgumentException("Unknown JSClass: " + jsclass);
-        }
-    }
+		switch (jsclass) {
+		case UNCLASSIFIED:
+			return 0;
+		case BENIGN:
+			return 1;
+		case OBFUSCATED:
+			return 2;
+		case MALICIOUS:
+			return MALICIOUS_ID;
+		default:
+			throw new IllegalArgumentException("Unknown JSClass: " + jsclass);
+		}
+	}
 
-    public JSStaticResults getJSStaticResults(){
+	public final JSStaticResults getJSStaticResults() {
 		return JSStaticResults.newBuilder().addAllResults(resultsList).build();
 	}
 
-	public boolean isMaliciousKeywords() {
+	public final boolean isMaliciousKeywords() {
 		return maliciousKeywords;
 	}
 
-	public boolean isSuspiciousKeywords() {
+	public final boolean isSuspiciousKeywords() {
 		return suspiciousKeywords;
 	}
 
-	public JSClass getClassification() {
+	public final JSClass getClassification() {
 		return classification;
 	}
 
-	public String getClassificationAsString() {
+	public final String getClassificationAsString() {
 		return classification.name().toLowerCase();
 	}
 
-	public byte[] getJSStaticResultsAsBytes() {
+	public final byte[] getJSStaticResultsAsBytes() {
 		return getJSStaticResults().toByteArray();
 	}
 }
